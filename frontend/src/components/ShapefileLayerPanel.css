@@ -1,0 +1,154 @@
+/* Floating shapefile visibility control.
+   It sits on the right side of the map, matching the requested red-box area. */
+.shapefile-panel {
+  position: absolute;
+  top: calc(var(--project-banner-height) + 72px);
+  right: 16px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 6;
+  width: min(310px, calc(100vw - 36px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.shapefile-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px 14px;
+}
+
+.shapefile-panel__header span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.shapefile-panel__header strong {
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.shapefile-panel__close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.shapefile-panel__close:hover {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.shapefile-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 10px calc(22px + env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shapefile-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 10px;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.shapefile-option:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.shapefile-option input {
+  width: 16px;
+  height: 16px;
+  accent-color: #172554;
+  cursor: pointer;
+}
+
+.shapefile-option span {
+  min-width: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .shapefile-panel {
+    top: calc(var(--project-banner-height) + 62px);
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: auto;
+    width: min(310px, calc(100vw - 24px));
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(14px);
+  }
+
+  .shapefile-panel__header {
+    padding: 11px 12px;
+    gap: 8px;
+  }
+
+  .shapefile-panel__list {
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .shapefile-option {
+    min-height: 42px;
+    padding: 9px;
+  }
+}
+
+@media (max-width: 520px) {
+  .shapefile-panel {
+    right: 10px;
+    width: min(280px, calc(100vw - 20px));
+  }
+
+  .shapefile-panel__header span {
+    font-size: 11px;
+  }
+
+  .shapefile-option span {
+    font-size: 12px;
+  }
+
+  .shapefile-option:last-child {
+    margin-bottom: 8px;
+  }
+}

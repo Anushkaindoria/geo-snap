@@ -1,0 +1,126 @@
+/* Map screen styles.
+   This file owns the full-screen Mapbox canvas and custom marker shape. */
+
+.map-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #ffffff;
+  touch-action: none;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
+.map-layer-toggle,
+.map-upload-fab {
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172554;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.map-layer-toggle {
+  top: calc(var(--project-banner-height) + 16px);
+  right: 16px;
+  width: 52px;
+  height: 46px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+}
+
+.map-layer-toggle span {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.map-upload-fab {
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 18px;
+  min-height: 46px;
+  gap: 8px;
+  background: #172554;
+  color: #ffffff;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.map-layer-toggle:hover,
+.map-upload-fab:hover {
+  transform: translateY(-1px);
+}
+
+.map-layer-toggle:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.map-upload-fab:hover {
+  background: #1d4ed8;
+}
+
+.photo-marker {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #ffffff;
+  border-radius: 999px 999px 999px 4px;
+  background: #0891b2;
+  box-shadow: 0 8px 18px rgba(8, 47, 73, 0.34);
+  cursor: pointer;
+  transform: rotate(-45deg);
+}
+
+.photo-marker::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+@media (max-width: 680px) {
+  .map-layer-toggle {
+    top: calc(var(--project-banner-height) + 10px);
+    right: 12px;
+    width: 50px;
+    height: 44px;
+  }
+
+  .map-upload-fab {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 12px;
+    min-height: 44px;
+    padding: 0 14px;
+  }
+
+  .photo-marker {
+    width: 38px;
+    height: 38px;
+  }
+
+  .photo-marker::after {
+    inset: 9px;
+  }
+}

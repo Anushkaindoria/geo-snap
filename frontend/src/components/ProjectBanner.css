@@ -1,0 +1,99 @@
+/* Shared Haskoning project banner.
+   The fixed height is reused by the map overlay layout to position controls below it. */
+
+:root {
+  --project-banner-height: 112px;
+}
+
+.project-banner {
+  width: 100%;
+  min-height: var(--project-banner-height);
+  display: grid;
+  grid-template-columns: minmax(170px, 250px) minmax(0, 1fr) minmax(170px, 250px);
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.55);
+  background: #ffffff;
+  padding: 18px clamp(20px, 4vw, 64px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+/* Map screen banner must float above Mapbox instead of taking document space. */
+.project-banner--overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 4;
+}
+
+.project-banner__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+}
+
+.project-banner__brand img {
+  display: block;
+  width: min(210px, 100%);
+  height: auto;
+}
+
+.project-banner__title {
+  margin: 0;
+  color: #0f2d4a;
+  font-size: clamp(17px, 1.7vw, 26px);
+  font-weight: 800;
+  line-height: 1.24;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.project-banner__balance {
+  display: block;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --project-banner-height: 116px;
+  }
+
+  .project-banner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: max(10px, env(safe-area-inset-top)) 14px 12px;
+  }
+
+  .project-banner__brand {
+    justify-self: center;
+  }
+
+  .project-banner__brand img {
+    width: 136px;
+  }
+
+  .project-banner__title {
+    max-width: 520px;
+    justify-self: center;
+    font-size: 13px;
+    line-height: 1.22;
+  }
+
+  .project-banner__balance {
+    display: none;
+  }
+}
+
+@media (max-width: 390px) {
+  :root {
+    --project-banner-height: 108px;
+  }
+
+  .project-banner__brand img {
+    width: 118px;
+  }
+
+  .project-banner__title {
+    font-size: 12px;
+  }
+}

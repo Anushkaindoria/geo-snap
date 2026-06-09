@@ -1,0 +1,15 @@
+export const addFloodProneWesternRailways = (map:mapboxgl.Map) => {
+    map.addSource("flood-prone-western-wms", {
+  type: "raster",
+  tiles: [
+    "http://localhost:8080/geoserver/railway/wms?service=WMS&version=1.1.1&request=GetMap&layers=railway:Flood Prone Car sheds and Workshops on Western Railway&styles=Flood_Prone_Western_Railway&format=image/png&transparent=true&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256",
+  ],
+  tileSize: 256,
+});
+
+map.addLayer({
+  id: "flood-prone-western-wms",
+  type: "raster",
+  source: "flood-prone-western-wms",
+});
+}

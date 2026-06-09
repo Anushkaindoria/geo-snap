@@ -1,0 +1,19 @@
+// A valid photo has readable GPS metadata and can be shown as a marker on the map.
+export type PhotoPoint = {
+  id: string;
+  name: string;
+  // Local File exists for new uploads; database-loaded records keep their saved URL instead.
+  file?: File;
+  url: string;
+  lat: number;
+  lng: number;
+  capturedAt?: string;
+  description?: string;
+};
+
+// Invalid photos are kept only to show the current upload error message.
+export type InvalidPhoto = {
+  id: string;
+  name: string;
+  url: string;
+};

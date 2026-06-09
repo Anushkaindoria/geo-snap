@@ -1,0 +1,55 @@
+/* Full-screen image preview.
+   Marker clicks open this modal so the selected upload can be inspected clearly. */
+
+.image-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.9);
+  padding: 24px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.image-modal figure {
+  width: min(1100px, 100%);
+  max-height: 92vh;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.image-modal img {
+  max-width: 100%;
+  max-height: 82vh;
+  justify-self: center;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.image-modal figcaption {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  color: #ffffff;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.image-modal figcaption span {
+  color: #cbd5e1;
+}
