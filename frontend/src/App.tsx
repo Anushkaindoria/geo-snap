@@ -178,39 +178,17 @@ function App() {
     setIsPhotoListOpen(true);
   }
 
-  // useEffect(() => {
-  //   async function loadPhotos() {
-  //     const response = await fetch(`${API_BASE_URL}/api/photos`);
-
-  //     const data = await response.json();
-
-  //     setSubmittedPhotos(data.photos);
-  //   }
-
-  //   loadPhotos();
-  // }, []);
-
   useEffect(() => {
-  async function loadPhotos() {
-    try {
-      alert(`Origin: ${window.location.origin}`);
-      alert(`Trying: ${API_BASE_URL}/api/photos`);
-
+    async function loadPhotos() {
       const response = await fetch(`${API_BASE_URL}/api/photos`);
-
-      alert(`Status: ${response.status}`);
 
       const data = await response.json();
 
       setSubmittedPhotos(data.photos);
-    } catch (error) {
-      alert(`ERROR: ${error instanceof Error ? error.message : String(error)}`);
-      console.error(error);
     }
-  }
 
-  loadPhotos();
-}, []);
+    loadPhotos();
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem(VIEW_STORAGE_KEY, isMapVisible ? "map" : "form");

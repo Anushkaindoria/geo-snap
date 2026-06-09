@@ -27,7 +27,7 @@ export function usePhotoImport() {
         const buffer = await file.arrayBuffer();
         const metadata = await exifr.parse(buffer, true);
 
-        alert(JSON.stringify(Object.keys(metadata || {})));
+        // alert(JSON.stringify(Object.keys(metadata || {})));
         
         console.log("Metadata:", metadata);
         const lat = metadata?.latitude;

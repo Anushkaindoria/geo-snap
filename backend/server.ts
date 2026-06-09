@@ -80,10 +80,10 @@ await fs.mkdir(uploadsDir, { recursive: true });
 
 app.use(cors());
 
-app.use((req, _res, next) => {
-  console.log("REQUEST:", req.method, req.url);
-  next();
-});
+// app.use((req, _res, next) => {
+//   console.log("REQUEST:", req.method, req.url);
+//   next();
+// });
 
 // Allow JSON request bodies for metadata-only edit requests.
 app.use(express.json());
