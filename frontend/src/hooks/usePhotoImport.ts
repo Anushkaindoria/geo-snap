@@ -1,7 +1,16 @@
 import { useState } from "react";
-//import { Capacitor } from "@capacitor/core";
 import * as exifr from "exifr";
 import type { InvalidPhoto, PhotoPoint } from "../types";
+
+type PhotoMetadata = {
+  latitude?: number;
+  longitude?: number;
+  GPSLatitude?: number | number[];
+  GPSLongitude?: number | number[];
+  GPSLatitudeRef?: string;
+  GPSLongitudeRef?: string;
+  DateTimeOriginal?: string | Date;
+};
 
 // Handles all form-side photo import state and EXIF GPS extraction.
 export function usePhotoImport() {
@@ -24,33 +33,18 @@ export function usePhotoImport() {
       const id = crypto.randomUUID();
 
       try {
-        const buffer = await file.arrayBuffer();
-        const metadata = await exifr.parse(buffer, true);
+        const metadata = await readPhotoMetadata(file);
+        const coordinates =
+          getCoordinatesFromMetadata(metadata) || (await getCurrentDeviceLocation());
 
-        // alert(JSON.stringify(Object.keys(metadata || {})));
-        
-        console.log("Metadata:", metadata);
-        const lat = metadata?.latitude;
-        const lng = metadata?.longitude;
-
-        console.log("LAT:", lat);
-        console.log("LNG:", lng);
-
-        // const fallbackLocation =
-        //   isValidCoordinate(lat) && isValidCoordinate(lng)
-        //     ? undefined
-        //     : await getNativeDeviceLocation();
-        // const finalLat = isValidCoordinate(lat) ? lat : fallbackLocation?.lat;
-        // const finalLng = isValidCoordinate(lng) ? lng : fallbackLocation?.lng;
-
-        if (isValidCoordinate(lat) && isValidCoordinate(lng)) {
+        if (coordinates) {
           validPhotos.push({
-          id,
-          file,
-          name: file.name,
-          url,
-          lat,
-          lng,
+            id,
+            file,
+            name: file.name,
+            url,
+            lat: coordinates.lat,
+            lng: coordinates.lng,
             capturedAt: metadata?.DateTimeOriginal
               ? new Date(metadata.DateTimeOriginal).toLocaleString()
               : undefined,
@@ -100,5 +94,84 @@ function isValidCoordinate(value: number | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+async function readPhotoMetadata(file: File): Promise<PhotoMetadata | undefined> {
+  try {
+    const gps = await exifr.gps(file);
+    const metadata = await exifr.parse(file, {
+      tiff: true,
+      exif: true,
+      gps: true,
+      mergeOutput: true,
+    });
 
+    return {
+      ...metadata,
+      latitude: gps?.latitude ?? metadata?.latitude,
+      longitude: gps?.longitude ?? metadata?.longitude,
+    };
+  } catch {
+    try {
+      const buffer = await file.arrayBuffer();
+      return await exifr.parse(buffer, {
+        tiff: true,
+        exif: true,
+        gps: true,
+        mergeOutput: true,
+      });
+    } catch {
+      return undefined;
+    }
+  }
+}
 
+function getCoordinatesFromMetadata(metadata?: PhotoMetadata) {
+  if (!metadata) return undefined;
+
+  const lat =
+    metadata.latitude ??
+    convertDmsToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
+  const lng =
+    metadata.longitude ??
+    convertDmsToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+
+  if (!isValidCoordinate(lat) || !isValidCoordinate(lng)) {
+    return undefined;
+  }
+
+  return { lat, lng };
+}
+
+function convertDmsToDecimal(
+  value: number | number[] | undefined,
+  direction?: string,
+) {
+  if (typeof value === "number") return value;
+  if (!Array.isArray(value) || value.length < 3) return undefined;
+
+  const [degrees, minutes, seconds] = value;
+  const decimal = Math.abs(degrees) + minutes / 60 + seconds / 3600;
+  const sign = direction === "S" || direction === "W" ? -1 : 1;
+
+  return decimal * sign;
+}
+
+async function getCurrentDeviceLocation() {
+  if (!navigator.geolocation) return undefined;
+
+  try {
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 15000,
+      });
+    });
+
+    return {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+    };
+  } catch {
+    return undefined;
+  }
+}

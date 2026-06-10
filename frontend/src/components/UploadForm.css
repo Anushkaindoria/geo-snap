@@ -55,13 +55,13 @@
   width: min(900px, 100%);
   display: grid;
   place-items: center;
-  gap: 9px;
-  min-height: 190px;
+  gap: 12px;
+  min-height: 218px;
   border: 1.5px dashed #8399b3;
   border-radius: 8px;
   background: #f8fbff;
-  cursor: pointer;
   text-align: center;
+  padding: 22px;
 }
 
 .file-dropzone:hover {
@@ -69,7 +69,7 @@
   background: #eff6ff;
 }
 
-.file-dropzone input {
+.upload-source-option input {
   display: none;
 }
 
@@ -93,6 +93,41 @@
   color: #ffffff;
   font-size: 34px;
   line-height: 1;
+}
+
+.upload-source-grid {
+  width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.upload-source-option {
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 82px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172554;
+  cursor: pointer;
+  padding: 12px 10px;
+  font-weight: 900;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.upload-source-option:hover {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.upload-source-option span {
+  font-size: 14px;
 }
 
 .metadata-status {
@@ -323,7 +358,7 @@
   .file-dropzone {
     min-height: 156px;
     gap: 8px;
-    padding: 18px;
+    padding: 18px 12px;
   }
 
   .file-icon {
@@ -338,6 +373,20 @@
 
   .file-dropzone small {
     font-size: 13px;
+  }
+
+  .upload-source-grid {
+    gap: 8px;
+  }
+
+  .upload-source-option {
+    min-height: 74px;
+    gap: 6px;
+    padding: 10px 6px;
+  }
+
+  .upload-source-option span {
+    font-size: 12px;
   }
 
   .coordinate-panel,
@@ -381,6 +430,19 @@
 
   .map-button {
     margin-right: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .upload-source-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-source-option {
+    min-height: 52px;
+    grid-template-columns: 24px 1fr;
+    justify-items: start;
+    padding-inline: 14px;
   }
 }
 

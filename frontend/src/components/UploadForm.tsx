@@ -1,3 +1,4 @@
+import { Camera, FolderOpen, Image } from "lucide-react";
 import type { InvalidPhoto, PhotoPoint } from "../types";
 import { ProjectBanner } from "./ProjectBanner";
 import "./UploadForm.css";
@@ -12,7 +13,9 @@ type UploadFormProps = {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onClearForm: () => void;
   onBackToMap: () => void;
+  submitError?: string;
   submitLabel?: string;
+  isSubmitting?: boolean;
 };
 
 // This screen collects photos first, then shows extracted GPS values before submit.
@@ -26,7 +29,9 @@ export function UploadForm({
   onSubmit,
   onClearForm,
   onBackToMap,
+  submitError,
   submitLabel = "Submit",
+  isSubmitting = false,
 }: UploadFormProps) {
   const hasFormData = selectedPhotos.length > 0 || invalidPhotos.length > 0;
 
@@ -44,17 +49,44 @@ export function UploadForm({
           </p>
         </div>
 
-        <label className="file-dropzone">
+        <section className="file-dropzone" aria-label="Choose photo source">
           <span className="file-icon">+</span>
           <strong>Upload photos here</strong>
-          <small>GPS-enabled JPG, JPEG, HEIC, or PNG files</small>
-          <input
-            type="file"
-            accept="image/*"
-            //capture="environment"
-            onChange={onPhotoUpload}
-          />
-        </label>
+          <small>Choose camera, gallery, or files</small>
+
+          <div className="upload-source-grid">
+            <label className="upload-source-option">
+              <Camera size={22} />
+              <span>Camera</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={onPhotoUpload}
+              />
+            </label>
+
+            <label className="upload-source-option">
+              <Image size={22} />
+              <span>Gallery</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onPhotoUpload}
+              />
+            </label>
+
+            <label className="upload-source-option">
+              <FolderOpen size={22} />
+              <span>Files</span>
+              <input
+                type="file"
+                accept="image/*,.jpg,.jpeg,.png,.heic,.heif"
+                onChange={onPhotoUpload}
+              />
+            </label>
+          </div>
+        </section>
 
         {isReadingMetadata && (
           <p className="metadata-status">Reading photo metadata...</p>
@@ -98,6 +130,13 @@ export function UploadForm({
           </section>
         )}
 
+        {submitError && (
+          <section className="invalid-panel">
+            <strong>Photo submit failed.</strong>
+            <span>{submitError}</span>
+          </section>
+        )}
+
         <label className="description-field">
           <span>Description</span>
           <textarea
@@ -121,7 +160,7 @@ export function UploadForm({
             type="button"
             className="clear-button"
             onClick={onClearForm}
-            disabled={isReadingMetadata || !hasFormData}
+            disabled={isReadingMetadata || isSubmitting || !hasFormData}
           >
             Clear form
           </button>
@@ -129,7 +168,7 @@ export function UploadForm({
           <button
             type="submit"
             className="submit-button"
-            disabled={selectedPhotos.length === 0 || isReadingMetadata}
+            disabled={selectedPhotos.length === 0 || isReadingMetadata || isSubmitting}
           >
             {submitLabel}
           </button>

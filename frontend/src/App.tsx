@@ -33,6 +33,8 @@ function App() {
   });
   const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
   const [isPhotoListOpen, setIsPhotoListOpen] = useState(false);
+  const [isSubmittingPhoto, setIsSubmittingPhoto] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const {
     selectedPhotos,
@@ -57,6 +59,9 @@ function App() {
     event.preventDefault();
     if (selectedPhotos.length === 0) return;
 
+    setIsSubmittingPhoto(true);
+    setSubmitError("");
+
     const draftPhoto = selectedPhotos[0];
     const metadata = {
       name: draftPhoto.name,
@@ -66,75 +71,92 @@ function App() {
       description: description.trim(),
     };
 
-    // Edit mode sends metadata only because the saved image file is unchanged.
-    if (editingPhotoId) {
-      const response = await fetch(`${API_BASE_URL}/api/photos/${editingPhotoId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(metadata),
+    try {
+      // Edit mode sends metadata only because the saved image file is unchanged.
+      if (editingPhotoId) {
+        const response = await fetch(`${API_BASE_URL}/api/photos/${editingPhotoId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(metadata),
+        });
+
+        if (!response.ok) {
+          throw new Error("Update failed");
+        }
+
+        const result = await response.json();
+        setSubmittedPhotos((currentPhotos) =>
+          currentPhotos.map((photo) =>
+            photo.id === editingPhotoId ? result.photo : photo,
+          ),
+        );
+        setSelectedMapPhotoId(result.photo.id);
+        setIsPhotoListOpen(true);
+        setEditingPhotoId(null);
+        clearFormDraft();
+        setIsMapVisible(true);
+        return;
+      }
+
+      // A browser File exists only for a newly selected photo.
+      if (!draftPhoto.file) {
+        throw new Error("Please select a photo again before submitting.");
+      }
+
+      const formData = new FormData();
+      formData.append("photos", draftPhoto.file);
+      formData.append("metadata", JSON.stringify([metadata]));
+
+      const response = await fetch(`${API_BASE_URL}/api/photos`, {
+        method: "POST",
+        body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Update failed");
+        const errorData = await response.json().catch(() => undefined);
+        throw new Error(errorData?.message || "Upload failed");
       }
 
       const result = await response.json();
-      setSubmittedPhotos((currentPhotos) =>
-        currentPhotos.map((photo) =>
-          photo.id === editingPhotoId ? result.photo : photo,
-        ),
-      );
-      setSelectedMapPhotoId(result.photo.id);
+      setSubmittedPhotos((currentPhotos) => [...currentPhotos, ...result.photos]);
+      setSelectedMapPhotoId(result.photos[0]?.id || null);
       setIsPhotoListOpen(true);
-      setEditingPhotoId(null);
       clearFormDraft();
       setIsMapVisible(true);
-      return;
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Photo could not be submitted. Please try again.",
+      );
+    } finally {
+      setIsSubmittingPhoto(false);
     }
-
-    // A browser File exists only for a newly selected photo.
-    if (!draftPhoto.file) return;
-
-    const formData = new FormData();
-    formData.append("photos", draftPhoto.file);
-    formData.append("metadata", JSON.stringify([metadata]));
-
-    const response = await fetch(`${API_BASE_URL}/api/photos`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error("Upload failed");
-    }
-
-    const result = await response.json();
-    setSubmittedPhotos((currentPhotos) => [...currentPhotos, ...result.photos]);
-    setSelectedMapPhotoId(result.photos[0]?.id || null);
-    setIsPhotoListOpen(true);
-    clearFormDraft();
-    setIsMapVisible(true);
   }
 
   function handleClearForm() {
+    setSubmitError("");
     clearFormDraft();
   }
 
   function handleOpenUploadForm() {
+    setSubmitError("");
     clearFormDraft();
     setEditingPhotoId(null);
     setIsMapVisible(false);
   }
 
   function handleBackToMap() {
+    setSubmitError("");
     clearFormDraft();
     setEditingPhotoId(null);
     setIsMapVisible(true);
   }
 
   function handleEditPhoto(photo: PhotoPoint) {
+    setSubmitError("");
     loadEditDraft(photo);
     setEditingPhotoId(photo.id);
     setSelectedMapPhotoId(photo.id);
@@ -180,11 +202,31 @@ function App() {
 
   useEffect(() => {
     async function loadPhotos() {
-      const response = await fetch(`${API_BASE_URL}/api/photos`);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/photos`);
 
-      const data = await response.json();
+        if (!response.ok) return;
 
-      setSubmittedPhotos(data.photos);
+        const data = await response.json();
+        const savedPhotos: PhotoPoint[] = Array.isArray(data.photos)
+          ? data.photos
+              .map((photo: PhotoPoint) => ({
+                ...photo,
+                url: normalizePhotoUrl(photo.url),
+                lat: Number(photo.lat),
+                lng: Number(photo.lng),
+              }))
+              .filter((photo: PhotoPoint) => {
+                return Number.isFinite(photo.lat) && Number.isFinite(photo.lng);
+              })
+          : [];
+
+        setSubmittedPhotos(savedPhotos);
+        setSelectedMapPhotoId(null);
+        setIsPhotoListOpen(savedPhotos.length > 0);
+      } catch {
+        setSubmittedPhotos([]);
+      }
     }
 
     loadPhotos();
@@ -217,7 +259,11 @@ function App() {
         onSubmit={handleSubmit}
         onClearForm={handleClearForm}
         onBackToMap={handleBackToMap}
-        submitLabel={editingPhotoId ? "Update" : "Submit"}
+        submitError={submitError}
+        submitLabel={
+          isSubmittingPhoto ? "Submitting..." : editingPhotoId ? "Update" : "Submit"
+        }
+        isSubmitting={isSubmittingPhoto}
       />
     );
   }
@@ -246,3 +292,11 @@ function App() {
 }
 
 export default App;
+
+function normalizePhotoUrl(url: string) {
+  if (!url) return url;
+
+  return url
+    .replace("http://localhost:5000", API_BASE_URL)
+    .replace("http://geo-snap.onrender.com", "https://geo-snap.onrender.com");
+}
