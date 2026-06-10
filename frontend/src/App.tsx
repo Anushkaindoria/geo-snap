@@ -122,7 +122,7 @@ function App() {
       const result = await response.json();
       setSubmittedPhotos((currentPhotos) => [...currentPhotos, ...result.photos]);
       setSelectedMapPhotoId(result.photos[0]?.id || null);
-      setIsPhotoListOpen(true);
+      setIsPhotoListOpen(false);
       clearFormDraft();
       setIsMapVisible(true);
     } catch (error) {
@@ -223,7 +223,7 @@ function App() {
 
         setSubmittedPhotos(savedPhotos);
         setSelectedMapPhotoId(null);
-        setIsPhotoListOpen(savedPhotos.length > 0);
+        setIsPhotoListOpen(false);
       } catch {
         setSubmittedPhotos([]);
       }
