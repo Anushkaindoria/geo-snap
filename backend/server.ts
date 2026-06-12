@@ -14,8 +14,17 @@ import mongoose from "mongoose";
 import Photo from "./models/Photo.js";
 import { pool } from "./db.js";
 import layerRoutes from "./routes/layerRoutes.js";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 dotenv.config();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const MONGODB_URI = process.env.MONGODB_URI || "";
 
 mongoose
@@ -53,56 +62,29 @@ const FRONTEND_URLS = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 
   .map((url) => url.trim())
   .filter(Boolean);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, "uploads");
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+// const uploadsDir = path.join(__dirname, "uploads");
 
-
-
-await fs.mkdir(uploadsDir, { recursive: true });
-
-// Allow the Vite frontend to call this backend while both run on different ports.
-// app.use(
-//   cors({
-//     origin(origin, callback) {
-//       if (
-//         !origin ||
-//         FRONTEND_URLS.length === 0 ||
-//         FRONTEND_URLS.includes(origin) ||
-//         origin.startsWith("capacitor://")
-//       ) {
-//         callback(null, true);
-//         return;
-//       }
-
-//       callback(new Error("CORS origin is not allowed"));
-//     },
-//   }),
-// );
+// await fs.mkdir(uploadsDir, { recursive: true });
 
 app.use(cors());
-
-// app.use((req, _res, next) => {
-//   console.log("REQUEST:", req.method, req.url);
-//   next();
-// });
 
 // Allow JSON request bodies for metadata-only edit requests.
 app.use(express.json());
 
 // Serve saved images so frontend can render them after refresh while backend is running.
-app.use("/uploads", express.static(uploadsDir));
+//app.use("/uploads", express.static(uploadsDir));
 
 app.use("/api/layers", layerRoutes);//using shapefiles layer 
 
-const storage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, callback) => {
-    callback(null, uploadsDir);
-  },
-  filename: (_req: Request, file: Express.Multer.File, callback) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-    callback(null, `${Date.now()}-${randomUUID()}-${safeName}`);
-  },
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (_req, _file) => ({
+    folder: "geo-snap",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    public_id: `${Date.now()}-${randomUUID()}`,
+  }),
 });
 
 // Multer reads multipart/form-data from the frontend submit request.
@@ -155,11 +137,14 @@ app.post(
 
       console.log("HOST =", req.get("host"));
     console.log("PROTOCOL =", req.protocol);
+
+    console.log("FILE =", file);
+console.log("FILE PATH =", (file as any).path);
     
       const photo = {
         id: randomUUID(),
         name: item.name || file.originalname,
-        url: `${req.protocol}://${req.get("host")}/uploads/${file.filename}`,
+        url: (file as any).path,
         lat: Number(item.lat),
         lng: Number(item.lng),
         capturedAt: item.capturedAt || undefined,
@@ -219,7 +204,7 @@ app.delete("/api/photos/:id", async (req: Request, res: Response) => {
     return;
   }
 
-  await removeUploadedFile(deletedPhoto.url);
+  //await removeUploadedFile(deletedPhoto.url);
 
   res.json({
     message: "Photo deleted successfully",
@@ -234,9 +219,6 @@ app.use(
   },
 );
 
-// app.listen(PORT, () => {
-//   console.log(`Backend server running on http://localhost:${PORT}`);
-// });
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Backend server running on port ${PORT}`);
@@ -253,11 +235,11 @@ function parseMetadata(metadata: unknown): PhotoMetadata[] {
   }
 }
 
-async function removeUploadedFile(photoUrl: string) {
-  try {
-    const filename = path.basename(new URL(photoUrl).pathname);
-    await fs.unlink(path.join(uploadsDir, filename));
-  } catch {
-    // Deleting the database record is still valid if the local file is already missing.
-  }
-}
+// async function removeUploadedFile(photoUrl: string) {
+//   try {
+//     const filename = path.basename(new URL(photoUrl).pathname);
+//     await fs.unlink(path.join(uploadsDir, filename));
+//   } catch {
+//     // Deleting the database record is still valid if the local file is already missing.
+//   }
+// }

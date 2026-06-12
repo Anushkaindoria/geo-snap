@@ -120,26 +120,26 @@ export function getDynamicLayerIds(tableName: string): DynamicLayerIds {
 }
 
 const LAYER_COLORS = [
-  "#FF0000", // Red
-  "#0000FF", // Blue
-  "#00AA00", // Green
-  "#FF8C00", // Orange
-  "#800080", // Purple
-  "#00CED1", // Cyan
-  "#FF1493", // Pink
-  "#8B4513", // Brown
-  "#808000", // Olive
-  "#000080", // Navy
-  "#FFD700", // Gold
-  "#228B22", // Forest Green
-  "#4B0082", // Indigo
-  "#DC143C", // Crimson
-  "#20B2AA", // Teal
-  "#A0522D", // Sienna
-  "#9932CC", // Dark Orchid
-  "#2F4F4F", // Slate Gray
-  "#FF69B4", // Hot Pink
-  "#1E90FF", // Dodger Blue
+  "#E53935", // Red
+  "#1E88E5", // Blue
+  "#43A047", // Green
+  "#FB8C00", // Orange
+  "#8E24AA", // Purple
+  "#00897B", // Teal
+  "#6D4C41", // Brown
+  "#FDD835", // Yellow
+  "#546E7A", // Blue Grey
+  "#7CB342", // Lime Green
+  "#660000", // brown
+  "#5E35B1", // Deep Purple
+  "#EF6C00", // Deep Orange
+  "#2E7D32", // Dark Green
+  "#795548", // Coffee Brown
+  "#9E9D24", // Olive
+  "#00ACC1", // Cyan
+  "#00CCCC", // Golden
+  "#4E342E", // Dark Brown
+  "#7B1FA2", // Violet
 ];
 
 function getStableLayerColor(tableName: string) {
