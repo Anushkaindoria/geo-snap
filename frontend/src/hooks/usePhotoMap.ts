@@ -1,12 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import type { PhotoPoint } from "../types";
-import { MAP_LAYER_CONFIGS } from "../mapLayers/mapLayerConfig";
+import {
+  addDynamicGeoJsonLayer,
+  setDynamicGeoJsonLayerVisibility,
+} from "../mapLayers/dynamicGeoJsonLayer";
+import { fetchGisLayerGeoJson } from "../services/gisLayerService";
+import type { GisLayerSummary } from "../types/gis";
 
 type UsePhotoMapOptions = {
   isMapVisible: boolean;
   photos: PhotoPoint[];
   focusPhotoId: string | null;
+  gisLayers: GisLayerSummary[];
   visibleLayerIds: string[];
   onMarkerClick: (photo: PhotoPoint) => void;
 };
@@ -16,6 +22,7 @@ export function usePhotoMap({
   isMapVisible,
   photos,
   focusPhotoId,
+  gisLayers,
   visibleLayerIds,
   onMarkerClick,
 }: UsePhotoMapOptions) {
@@ -25,6 +32,8 @@ export function usePhotoMap({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const onMarkerClickRef = useRef(onMarkerClick);
   const photoSignatureRef = useRef("");
+  const loadedGisLayerIdsRef = useRef<Set<string>>(new Set());
+  const [mapLoadVersion, setMapLoadVersion] = useState(0);
 
   // Keep the latest marker click handler without forcing marker re-creation on every render.
   useEffect(() => {
@@ -46,15 +55,10 @@ export function usePhotoMap({
     mapRef.current = map;
 
     // Resize fixes the common blank-side issue after React mounts the map container.
-   map.on("load", async () => {
-  map.resize();
-
-  // Register every GeoServer/WMS layer once, then keep it hidden until checked.
-  MAP_LAYER_CONFIGS.forEach((layer) => {
-    layer.addLayer(map);
-  });
-  syncMapLayerVisibility(map, visibleLayerIds);
-});
+    map.on("load", () => {
+      map.resize();
+      setMapLoadVersion((version) => version + 1);
+    });
 
     window.setTimeout(() => {
       map.resize();
@@ -63,16 +67,55 @@ export function usePhotoMap({
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
+      loadedGisLayerIdsRef.current.clear();
       map.remove();
       mapRef.current = null;
     };
   }, [isMapVisible]);
 
   useEffect(() => {
-    if (!mapRef.current || !isMapVisible) return;
+    const map = mapRef.current;
 
-    syncMapLayerVisibility(mapRef.current, visibleLayerIds);
-  }, [isMapVisible, visibleLayerIds]);
+    if (!map || !isMapVisible || !map.isStyleLoaded()) return;
+
+    const visibleLayerIdSet = new Set(visibleLayerIds);
+    const availableLayerById = new Map(
+      gisLayers.map((layer) => [layer.tableName, layer]),
+    );
+
+    // Hide unchecked layers while keeping already fetched GeoJSON cached on the map.
+    gisLayers.forEach((layer) => {
+      if (loadedGisLayerIdsRef.current.has(layer.tableName)) {
+        setDynamicGeoJsonLayerVisibility(
+          map,
+          layer.tableName,
+          visibleLayerIdSet.has(layer.tableName),
+        );
+      }
+    });
+
+    visibleLayerIds.forEach((tableName) => {
+      const layer = availableLayerById.get(tableName);
+
+      if (!layer || loadedGisLayerIdsRef.current.has(tableName)) return;
+
+      fetchGisLayerGeoJson(tableName)
+        .then((geoJson) => {
+          if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+
+          addDynamicGeoJsonLayer(
+            mapRef.current,
+            layer,
+            geoJson,
+            visibleLayerIds.includes(tableName),
+          );
+          loadedGisLayerIdsRef.current.add(tableName);
+        })
+        .catch((error) => {
+          console.error(`Layer load failed for ${tableName}`, error);
+        });
+    });
+  }, [gisLayers, isMapVisible, mapLoadVersion, visibleLayerIds]);
 
   useEffect(() => {
     if (!mapRef.current || !isMapVisible) return;
@@ -132,16 +175,4 @@ export function usePhotoMap({
     mapContainerRef,
     flyToPhoto,
   };
-}
-
-function syncMapLayerVisibility(map: mapboxgl.Map, visibleLayerIds: string[]) {
-  MAP_LAYER_CONFIGS.forEach((layer) => {
-    if (!map.getLayer(layer.id)) return;
-
-    map.setLayoutProperty(
-      layer.id,
-      "visibility",
-      visibleLayerIds.includes(layer.id) ? "visible" : "none",
-    );
-  });
 }

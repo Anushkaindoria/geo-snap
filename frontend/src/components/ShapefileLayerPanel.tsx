@@ -1,15 +1,17 @@
 import { X } from "lucide-react";
-import { MAP_LAYER_CONFIGS } from "../mapLayers/mapLayerConfig";
+import type { GisLayerSummary } from "../types/gis";
 import "./ShapefileLayerPanel.css";
 
 type ShapefileLayerPanelProps = {
+  layers: GisLayerSummary[];
   visibleLayerIds: string[];
   onLayerToggle: (layerId: string) => void;
   onClose: () => void;
 };
 
-// Right-side map control for turning GeoServer shapefile/WMS layers on and off.
+// Right-side map control for turning dynamic PostGIS GeoJSON layers on and off.
 export function ShapefileLayerPanel({
+  layers,
   visibleLayerIds,
   onLayerToggle,
   onClose,
@@ -31,16 +33,22 @@ export function ShapefileLayerPanel({
       </div>
 
       <div className="shapefile-panel__list">
-        {MAP_LAYER_CONFIGS.map((layer) => (
-          <label key={layer.id} className="shapefile-option">
+        {layers.length === 0 ? (
+          <p className="shapefile-panel__empty">
+            No GIS layers found in PostGIS.
+          </p>
+        ) : (
+          layers.map((layer) => (
+          <label key={layer.tableName} className="shapefile-option">
             <input
               type="checkbox"
-              checked={visibleLayerIds.includes(layer.id)}
-              onChange={() => onLayerToggle(layer.id)}
+              checked={visibleLayerIds.includes(layer.tableName)}
+              onChange={() => onLayerToggle(layer.tableName)}
             />
             <span>{layer.label}</span>
           </label>
-        ))}
+          ))
+        )}
       </div>
     </aside>
   );

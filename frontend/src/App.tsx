@@ -4,7 +4,9 @@ import { UploadForm } from "./components/UploadForm";
 import { usePhotoImport } from "./hooks/usePhotoImport";
 import { usePhotoMap } from "./hooks/usePhotoMap";
 import { API_BASE_URL } from "./config/api";
+import { fetchGisLayers } from "./services/gisLayerService";
 import type { PhotoPoint } from "./types";
+import type { GisLayerSummary } from "./types/gis";
 import "./App.css";
 
 const VIEW_STORAGE_KEY = "photo-map-current-view";
@@ -31,6 +33,7 @@ function App() {
       return [];
     }
   });
+  const [gisLayers, setGisLayers] = useState<GisLayerSummary[]>([]);
   const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
   const [isPhotoListOpen, setIsPhotoListOpen] = useState(false);
   const [isSubmittingPhoto, setIsSubmittingPhoto] = useState(false);
@@ -42,6 +45,7 @@ function App() {
     description,
     isReadingMetadata,
     handlePhotoUpload,
+    updatePhotoCoordinate,
     setDescription,
     clearFormDraft,
     loadEditDraft,
@@ -51,6 +55,7 @@ function App() {
     isMapVisible,
     photos: submittedPhotos,
     focusPhotoId: selectedMapPhotoId,
+    gisLayers,
     visibleLayerIds,
     onMarkerClick: handleMarkerPhotoSelect,
   });
@@ -63,6 +68,13 @@ function App() {
     setSubmitError("");
 
     const draftPhoto = selectedPhotos[0];
+
+    if (!Number.isFinite(draftPhoto.lat) || !Number.isFinite(draftPhoto.lng)) {
+      setSubmitError("Please enter valid latitude and longitude before submitting.");
+      setIsSubmittingPhoto(false);
+      return;
+    }
+
     const metadata = {
       name: draftPhoto.name,
       lat: draftPhoto.lat,
@@ -233,6 +245,38 @@ function App() {
   }, []);
 
   useEffect(() => {
+    let isActive = true;
+
+    async function loadGisLayers() {
+      try {
+        const layers = await fetchGisLayers();
+
+        if (!isActive) return;
+
+        setGisLayers(layers);
+        setVisibleLayerIds((currentLayerIds) => {
+          const availableLayerIds = new Set(
+            layers.map((layer) => layer.tableName),
+          );
+
+          return currentLayerIds.filter((layerId) =>
+            availableLayerIds.has(layerId),
+          );
+        });
+      } catch (error) {
+        console.error("GIS layer list could not be loaded.", error);
+        if (isActive) setGisLayers([]);
+      }
+    }
+
+    loadGisLayers();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
     sessionStorage.setItem(VIEW_STORAGE_KEY, isMapVisible ? "map" : "form");
   }, [isMapVisible]);
 
@@ -255,6 +299,7 @@ function App() {
         description={description}
         isReadingMetadata={isReadingMetadata}
         onPhotoUpload={handlePhotoUpload}
+        onPhotoCoordinateChange={updatePhotoCoordinate}
         onDescriptionChange={setDescription}
         onSubmit={handleSubmit}
         onClearForm={handleClearForm}
@@ -274,6 +319,7 @@ function App() {
         mapContainerRef={mapContainerRef}
         photos={submittedPhotos}
         selectedPhotoId={selectedMapPhotoId}
+        gisLayers={gisLayers}
         visibleLayerIds={visibleLayerIds}
         isLayerPanelOpen={isLayerPanelOpen}
         isPhotoListOpen={isPhotoListOpen}

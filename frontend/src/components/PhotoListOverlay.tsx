@@ -46,41 +46,51 @@ export function PhotoListOverlay({
       </div>
 
       <div className="map-list-items">
-        {visiblePhotos.map((photo) => (
-          <article key={photo.id} className="map-list-item">
-            <button
-              type="button"
-              className="map-list-item__content"
-              onClick={() => onPhotoClick(photo)}
-            >
-              <img src={photo.url} alt={photo.name} />
-              <span>
-                <strong>{photo.name}</strong>
-                <small>{photo.description || "No description added"}</small>
-              </span>
-            </button>
+        {visiblePhotos.map((photo) => {
+  console.log("PHOTO =", photo);
+  console.log("PHOTO URL =", photo.url);
 
-            <div className="map-list-item__actions">
-              <button
-                type="button"
-                onClick={() => onEditPhoto(photo)}
-                aria-label={`Edit ${photo.name}`}
-                title="Edit photo"
-              >
-                <Pencil size={16} />
-              </button>
+  return (
+    <article key={photo.id} className="map-list-item">
+      <button
+        type="button"
+        className="map-list-item__content"
+        onClick={() => onPhotoClick(photo)}
+      >
+        <img
+          src={photo.url}
+          alt={photo.name}
+          onError={() => console.log("IMAGE FAILED", photo.url)}
+        />
 
-              <button
-                type="button"
-                onClick={() => onDeletePhoto(photo)}
-                aria-label={`Delete ${photo.name}`}
-                title="Delete photo"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </article>
-        ))}
+        <span>
+          <strong>{photo.name}</strong>
+          <small>{photo.description || "No description added"}</small>
+        </span>
+      </button>
+
+      <div className="map-list-item__actions">
+        <button
+          type="button"
+          onClick={() => onEditPhoto(photo)}
+          aria-label={`Edit ${photo.name}`}
+          title="Edit photo"
+        >
+          <Pencil size={16} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDeletePhoto(photo)}
+          aria-label={`Delete ${photo.name}`}
+          title="Delete photo"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </article>
+  );
+})}
       </div>
 
       <div className="map-list-actions">

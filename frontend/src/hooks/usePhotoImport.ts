@@ -37,24 +37,26 @@ export function usePhotoImport() {
         const coordinates =
           getCoordinatesFromMetadata(metadata) || (await getCurrentDeviceLocation());
 
-        if (coordinates) {
-          validPhotos.push({
-            id,
-            file,
-            name: file.name,
-            url,
-            lat: coordinates.lat,
-            lng: coordinates.lng,
-            capturedAt: metadata?.DateTimeOriginal
-              ? new Date(metadata.DateTimeOriginal).toLocaleString()
-              : undefined,
-          });
-          continue;
-        }
-
-        invalidPhotoFiles.push({ id, name: file.name, url });
+        validPhotos.push({
+          id,
+          file,
+          name: file.name,
+          url,
+          lat: coordinates?.lat ?? Number.NaN,
+          lng: coordinates?.lng ?? Number.NaN,
+          capturedAt: metadata?.DateTimeOriginal
+            ? new Date(metadata.DateTimeOriginal).toLocaleString()
+            : undefined,
+        });
       } catch {
-        invalidPhotoFiles.push({ id, name: file.name, url });
+        validPhotos.push({
+          id,
+          file,
+          name: file.name,
+          url,
+          lat: Number.NaN,
+          lng: Number.NaN,
+        });
       }
     }
 
@@ -71,6 +73,26 @@ export function usePhotoImport() {
     setDescription("");
   }
 
+  // Users can correct extracted coordinates or manually enter coordinates when needed.
+  function updatePhotoCoordinate(
+    photoId: string,
+    field: "lat" | "lng",
+    value: string,
+  ) {
+    const numericValue = value.trim() === "" ? Number.NaN : Number(value);
+
+    setSelectedPhotos((currentPhotos) =>
+      currentPhotos.map((photo) =>
+        photo.id === photoId
+          ? {
+              ...photo,
+              [field]: numericValue,
+            }
+          : photo,
+      ),
+    );
+  }
+
   // Existing database metadata is loaded into the same form to make editing straightforward.
   function loadEditDraft(photo: PhotoPoint) {
     setSelectedPhotos([photo]);
@@ -84,6 +106,7 @@ export function usePhotoImport() {
     description,
     isReadingMetadata,
     handlePhotoUpload,
+    updatePhotoCoordinate,
     setDescription,
     clearFormDraft,
     loadEditDraft,

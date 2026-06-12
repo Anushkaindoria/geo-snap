@@ -3,12 +3,14 @@ import { PhotoListOverlay } from "./PhotoListOverlay";
 import { ProjectBanner } from "./ProjectBanner";
 import { ShapefileLayerPanel } from "./ShapefileLayerPanel";
 import type { PhotoPoint } from "../types";
+import type { GisLayerSummary } from "../types/gis";
 import "./MapView.css";
 
 type MapViewProps = {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
   photos: PhotoPoint[];
   selectedPhotoId: string | null;
+  gisLayers: GisLayerSummary[];
   visibleLayerIds: string[];
   isLayerPanelOpen: boolean;
   isPhotoListOpen: boolean;
@@ -28,6 +30,7 @@ export function MapView({
   mapContainerRef,
   photos,
   selectedPhotoId,
+  gisLayers,
   visibleLayerIds,
   isLayerPanelOpen,
   isPhotoListOpen,
@@ -80,6 +83,7 @@ export function MapView({
 
       {isLayerPanelOpen && (
         <ShapefileLayerPanel
+          layers={gisLayers}
           visibleLayerIds={visibleLayerIds}
           onLayerToggle={onLayerToggle}
           onClose={onCloseLayerPanel}

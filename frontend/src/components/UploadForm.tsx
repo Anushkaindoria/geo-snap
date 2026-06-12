@@ -9,6 +9,11 @@ type UploadFormProps = {
   description: string;
   isReadingMetadata: boolean;
   onPhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onPhotoCoordinateChange: (
+    photoId: string,
+    field: "lat" | "lng",
+    value: string,
+  ) => void;
   onDescriptionChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onClearForm: () => void;
@@ -25,6 +30,7 @@ export function UploadForm({
   description,
   isReadingMetadata,
   onPhotoUpload,
+  onPhotoCoordinateChange,
   onDescriptionChange,
   onSubmit,
   onClearForm,
@@ -34,6 +40,10 @@ export function UploadForm({
   isSubmitting = false,
 }: UploadFormProps) {
   const hasFormData = selectedPhotos.length > 0 || invalidPhotos.length > 0;
+  const validCoordinateCount = selectedPhotos.filter((photo) => {
+    return Number.isFinite(photo.lat) && Number.isFinite(photo.lng);
+  }).length;
+  const hasValidCoordinates = validCoordinateCount > 0;
 
   return (
     <main className="form-screen">
@@ -95,8 +105,8 @@ export function UploadForm({
         {selectedPhotos.length > 0 && (
           <section className="coordinate-panel">
             <div className="panel-title">
-              <h2>Extracted coordinates</h2>
-              <span>{selectedPhotos.length} valid</span>
+              <h2>Photo coordinates</h2>
+              <span>{validCoordinateCount} valid</span>
             </div>
 
             <div className="photo-coordinate-list">
@@ -109,12 +119,36 @@ export function UploadForm({
 
                     <label>
                       Latitude
-                      <input value={photo.lat} readOnly />
+                      <input
+                        type="number"
+                        step="any"
+                        value={Number.isFinite(photo.lat) ? photo.lat : ""}
+                        onChange={(event) =>
+                          onPhotoCoordinateChange(
+                            photo.id,
+                            "lat",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Enter latitude"
+                      />
                     </label>
 
                     <label>
                       Longitude
-                      <input value={photo.lng} readOnly />
+                      <input
+                        type="number"
+                        step="any"
+                        value={Number.isFinite(photo.lng) ? photo.lng : ""}
+                        onChange={(event) =>
+                          onPhotoCoordinateChange(
+                            photo.id,
+                            "lng",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Enter longitude"
+                      />
                     </label>
                   </div>
                 </article>
@@ -168,7 +202,7 @@ export function UploadForm({
           <button
             type="submit"
             className="submit-button"
-            disabled={selectedPhotos.length === 0 || isReadingMetadata || isSubmitting}
+            disabled={!hasValidCoordinates || isReadingMetadata || isSubmitting}
           >
             {submitLabel}
           </button>

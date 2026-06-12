@@ -12,6 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import mongoose from "mongoose";
 import Photo from "./models/Photo.js";
+import { pool } from "./db.js";
+import layerRoutes from "./routes/layerRoutes.js";
 
 dotenv.config();
 const MONGODB_URI = process.env.MONGODB_URI || "";
@@ -91,6 +93,8 @@ app.use(express.json());
 // Serve saved images so frontend can render them after refresh while backend is running.
 app.use("/uploads", express.static(uploadsDir));
 
+app.use("/api/layers", layerRoutes);//using shapefiles layer 
+
 const storage = multer.diskStorage({
   destination: (_req: Request, _file: Express.Multer.File, callback) => {
     callback(null, uploadsDir);
@@ -148,6 +152,10 @@ app.post(
     const savedPhotos = await Promise.all(
      files.map(async(file, index) => {
       const item = metadata[index] || {};
+
+      console.log("HOST =", req.get("host"));
+    console.log("PROTOCOL =", req.protocol);
+    
       const photo = {
         id: randomUUID(),
         name: item.name || file.originalname,

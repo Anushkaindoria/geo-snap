@@ -70,6 +70,16 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.shapefile-panel__empty {
+  margin: 0;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 12px;
+}
+
 .shapefile-option {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
