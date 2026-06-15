@@ -33,6 +33,7 @@ function App() {
       return [];
     }
   });
+  const [uploadedGeoJson, setUploadedGeoJson] = useState<any | null>(null);
   const [gisLayers, setGisLayers] = useState<GisLayerSummary[]>([]);
   const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
   const [isPhotoListOpen, setIsPhotoListOpen] = useState(false);
@@ -57,6 +58,7 @@ function App() {
     focusPhotoId: selectedMapPhotoId,
     gisLayers,
     visibleLayerIds,
+    uploadedGeoJson,
     onMarkerClick: handleMarkerPhotoSelect,
   });
 
@@ -332,6 +334,7 @@ function App() {
         onShowAllPhotos={() => setSelectedMapPhotoId(null)}
         onClosePhotoList={() => setIsPhotoListOpen(false)}
         onOpenUploadForm={handleOpenUploadForm}
+        onGeoJsonUploaded={setUploadedGeoJson}
       />
     </>
   );

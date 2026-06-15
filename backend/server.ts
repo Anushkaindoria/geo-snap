@@ -16,6 +16,7 @@ import { pool } from "./db.js";
 import layerRoutes from "./routes/layerRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+import shapefileRoutes from "./routes/shapefileRoutes.js";
 
 dotenv.config();
 
@@ -62,12 +63,6 @@ const FRONTEND_URLS = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 
   .map((url) => url.trim())
   .filter(Boolean);
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-// const uploadsDir = path.join(__dirname, "uploads");
-
-// await fs.mkdir(uploadsDir, { recursive: true });
-
 app.use(cors());
 
 // Allow JSON request bodies for metadata-only edit requests.
@@ -77,6 +72,7 @@ app.use(express.json());
 //app.use("/uploads", express.static(uploadsDir));
 
 app.use("/api/layers", layerRoutes);//using shapefiles layer 
+app.use("/api/shapefiles", shapefileRoutes);
 
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -234,12 +230,3 @@ function parseMetadata(metadata: unknown): PhotoMetadata[] {
     return [];
   }
 }
-
-// async function removeUploadedFile(photoUrl: string) {
-//   try {
-//     const filename = path.basename(new URL(photoUrl).pathname);
-//     await fs.unlink(path.join(uploadsDir, filename));
-//   } catch {
-//     // Deleting the database record is still valid if the local file is already missing.
-//   }
-// }

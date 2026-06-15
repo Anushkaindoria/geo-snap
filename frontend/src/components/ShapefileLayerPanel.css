@@ -162,3 +162,30 @@
     margin-bottom: 8px;
   }
 }
+.upload-section {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload-input {
+  width: 100%;
+  font-size: 14px;
+}
+
+.upload-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.upload-btn:hover {
+  background: #1d4ed8;
+}

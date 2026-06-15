@@ -14,6 +14,7 @@ type UsePhotoMapOptions = {
   focusPhotoId: string | null;
   gisLayers: GisLayerSummary[];
   visibleLayerIds: string[];
+  uploadedGeoJson: any | null;
   onMarkerClick: (photo: PhotoPoint) => void;
 };
 
@@ -25,6 +26,7 @@ export function usePhotoMap({
   gisLayers,
   visibleLayerIds,
   onMarkerClick,
+  uploadedGeoJson,
 }: UsePhotoMapOptions) {
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -64,6 +66,7 @@ export function usePhotoMap({
       map.resize();
     }, 100);
 
+    
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
@@ -170,6 +173,39 @@ export function usePhotoMap({
       essential: true,
     });
   }
+
+
+  useEffect(() => {
+  const map = mapRef.current;
+
+  if (!map || !uploadedGeoJson || !map.isStyleLoaded()) return;
+
+  addDynamicGeoJsonLayer(
+    map,
+    {
+      tableName: "uploaded-shapefile",
+      label: "Uploaded Shapefile",
+    },
+    uploadedGeoJson,
+    true,
+  );
+
+  const bounds = new mapboxgl.LngLatBounds();
+
+  uploadedGeoJson.features.forEach((feature: any) => {
+    const coords = feature.geometry.coordinates;
+
+    if (feature.geometry.type === "Point") {
+      bounds.extend(coords);
+    }
+  });
+
+  if (!bounds.isEmpty()) {
+    map.fitBounds(bounds, {
+      padding: 50,
+    });
+  }
+}, [uploadedGeoJson]);
 
   return {
     mapContainerRef,

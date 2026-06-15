@@ -23,6 +23,7 @@ type MapViewProps = {
   onShowAllPhotos: () => void;
   onClosePhotoList: () => void;
   onOpenUploadForm: () => void;
+  onGeoJsonUploaded: (geojson: any) => void;
 };
 
 // The map screen is shown first and stays full-screen behind the floating photo list.
@@ -43,6 +44,7 @@ export function MapView({
   onShowAllPhotos,
   onClosePhotoList,
   onOpenUploadForm,
+  onGeoJsonUploaded,
 }: MapViewProps) {
   return (
     <main className="map-screen">
@@ -83,11 +85,12 @@ export function MapView({
 
       {isLayerPanelOpen && (
         <ShapefileLayerPanel
-          layers={gisLayers}
-          visibleLayerIds={visibleLayerIds}
-          onLayerToggle={onLayerToggle}
-          onClose={onCloseLayerPanel}
-        />
+        layers={gisLayers}
+        visibleLayerIds={visibleLayerIds}
+        onLayerToggle={onLayerToggle}
+        onClose={onCloseLayerPanel}
+        onGeoJsonUploaded={onGeoJsonUploaded}
+      />
       )}
     </main>
   );
