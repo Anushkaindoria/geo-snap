@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapView } from "./components/MapView";
+import { ImageModal } from "./components/ImageModal";
 import { UploadForm } from "./components/UploadForm";
 import { usePhotoImport } from "./hooks/usePhotoImport";
 import { usePhotoMap } from "./hooks/usePhotoMap";
@@ -20,6 +21,7 @@ function App() {
   });
   const [submittedPhotos, setSubmittedPhotos] = useState<PhotoPoint[]>([]);
   const [selectedMapPhotoId, setSelectedMapPhotoId] = useState<string | null>(null);
+  const [modalPhoto, setModalPhoto] = useState<PhotoPoint | null>(null);
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
   const [visibleLayerIds, setVisibleLayerIds] = useState<string[]>(() => {
     const savedLayerIds = sessionStorage.getItem(VISIBLE_LAYERS_STORAGE_KEY);
@@ -52,7 +54,7 @@ function App() {
     loadEditDraft,
   } = usePhotoImport();
 
-  const { mapContainerRef, flyToPhoto } = usePhotoMap({
+  const { mapContainerRef } = usePhotoMap({
     isMapVisible,
     photos: submittedPhotos,
     focusPhotoId: selectedMapPhotoId,
@@ -214,6 +216,10 @@ function App() {
     setIsPhotoListOpen(true);
   }
 
+  function handlePhotoPreview(photo: PhotoPoint) {
+  setModalPhoto(photo);
+}
+
   useEffect(() => {
     async function loadPhotos() {
       try {
@@ -325,7 +331,7 @@ function App() {
         visibleLayerIds={visibleLayerIds}
         isLayerPanelOpen={isLayerPanelOpen}
         isPhotoListOpen={isPhotoListOpen}
-        onListPhotoClick={flyToPhoto}
+        onListPhotoClick={handlePhotoPreview}
         onEditPhoto={handleEditPhoto}
         onDeletePhoto={handleDeletePhoto}
         onLayerToggle={handleLayerToggle}
@@ -336,6 +342,12 @@ function App() {
         onOpenUploadForm={handleOpenUploadForm}
         onGeoJsonUploaded={setUploadedGeoJson}
       />
+      {modalPhoto && (
+      <ImageModal
+        photo={modalPhoto}
+        onClose={() => setModalPhoto(null)}
+      />
+    )}
     </>
   );
 }
