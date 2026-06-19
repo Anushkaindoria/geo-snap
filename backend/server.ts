@@ -17,6 +17,7 @@ import layerRoutes from "./routes/layerRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import shapefileRoutes from "./routes/shapefileRoutes.js";
+import visionRoutes from "./routes/visionRoutes.js";
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use(express.json());
 
 app.use("/api/layers", layerRoutes);//using shapefiles layer 
 app.use("/api/shapefiles", shapefileRoutes);
+app.use("/api/vision", visionRoutes);
 
 const storage = new CloudinaryStorage({
   cloudinary,
