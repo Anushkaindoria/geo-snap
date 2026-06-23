@@ -14,7 +14,11 @@ export async function generateTagsFromImage(
     const imageBuffer = await imageResponse.arrayBuffer();
     console.log("Image fetched:", imageResponse.status);
 console.log("Image size:", imageBuffer.byteLength);
-
+    
+console.log(
+  "Mime type:",
+  imageResponse.headers.get("content-type")
+);
     const result = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: [
@@ -44,7 +48,13 @@ Return tags only.
       .filter(Boolean) || [];
 
   } catch (error) {
-    console.error("TAGGING ERROR:", error);
-    return [];
-  }
+  console.error(
+    "TAGGING ERROR FULL:",
+    JSON.stringify(error, null, 2)
+  );
+
+  console.error("TAGGING ERROR:", error);
+
+  return [];
+}
 }
