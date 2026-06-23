@@ -11,7 +11,17 @@ const ai = new GoogleGenAI({
 export async function testVision(
   _req: Request,
   res: Response,
+  
 ) {
+  console.log("NODE_ENV =", process.env.NODE_ENV);
+console.log(
+  "GEMINI KEY EXISTS =",
+  !!process.env.GEMINI_API_KEY
+);
+console.log(
+  "GEMINI KEY LAST 4 =",
+  process.env.GEMINI_API_KEY?.slice(-4)
+);
   try {
     // Send a basic prompt to Gemini.
     // We are not using image analysis yet.
@@ -27,6 +37,7 @@ export async function testVision(
     });
   }catch (error) {
   console.error("TEST ERROR:", error);
+  console.error("FULL ERROR =", error);
 
   res.status(500).json({
     message:
