@@ -36,6 +36,11 @@ const photoSchema = new mongoose.Schema(
     capturedAt: {
       type: String,
     },
+
+    tags: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

@@ -18,6 +18,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import shapefileRoutes from "./routes/shapefileRoutes.js";
 import visionRoutes from "./routes/visionRoutes.js";
+import { generateTagsFromImage } from "./services/imageTagging.js";
 
 dotenv.config();
 
@@ -132,12 +133,12 @@ app.post(
     const savedPhotos = await Promise.all(
      files.map(async(file, index) => {
       const item = metadata[index] || {};
-
-      console.log("HOST =", req.get("host"));
-    console.log("PROTOCOL =", req.protocol);
-
-    console.log("FILE =", file);
-console.log("FILE PATH =", (file as any).path);
+     console.log("Before tag generation");
+      const tags = await generateTagsFromImage(
+  (file as any).path,
+);
+console.log("After tag generation");
+console.log("Generated tags:", tags);
     
       const photo = {
         id: randomUUID(),
@@ -147,6 +148,7 @@ console.log("FILE PATH =", (file as any).path);
         lng: Number(item.lng),
         capturedAt: item.capturedAt || undefined,
         description: item.description || "",
+        tags,
       };
       const savedPhoto = await Photo.create(photo);
       

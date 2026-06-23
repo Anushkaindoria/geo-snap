@@ -331,6 +331,7 @@ function App() {
         visibleLayerIds={visibleLayerIds}
         isLayerPanelOpen={isLayerPanelOpen}
         isPhotoListOpen={isPhotoListOpen}
+        isImageModalOpen={Boolean(modalPhoto)}
         onListPhotoClick={handlePhotoPreview}
         onEditPhoto={handleEditPhoto}
         onDeletePhoto={handleDeletePhoto}

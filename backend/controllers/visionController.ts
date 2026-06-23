@@ -15,8 +15,9 @@ export async function testVision(
   try {
     // Send a basic prompt to Gemini.
     // We are not using image analysis yet.
+    
     const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model:  "gemini-2.5-flash-lite",
       contents: "Say hello from Gemini Vision API",
     });
 
@@ -24,14 +25,16 @@ export async function testVision(
     res.json({
       answer: result.text,
     });
-  } catch (error) {
-    console.error(error);
+  }catch (error) {
+  console.error("TEST ERROR:", error);
 
-    // Return a friendly error if Gemini request fails.
-    res.status(500).json({
-      message: "Gemini error",
-    });
-  }
+  res.status(500).json({
+    message:
+      error instanceof Error
+        ? error.message
+        : String(error),
+  });
+}
 }
 // Analyze a selected image and answer a user's question
 // using Gemini Vision.
@@ -51,9 +54,11 @@ export async function askImageQuestion(
     const imageResponse = await fetch(imageUrl);
 
 const imageBuffer = await imageResponse.arrayBuffer();
+console.log("Image fetched:", imageResponse.status);
+console.log("Image size:", imageBuffer.byteLength);
 
 const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: [
         {
           text: `
