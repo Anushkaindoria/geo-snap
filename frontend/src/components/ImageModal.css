@@ -102,6 +102,53 @@
   line-height: 1.6;
 }
 
+.ai-search-results {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #dbeafe;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ai-indexing-note {
+  margin-top: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.12);
+  padding: 10px 12px;
+  color: #fef3c7;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ai-indexing-count {
+  display: block;
+  margin-top: 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+
+.ai-clear-search {
+  width: fit-content;
+  min-height: 36px;
+  margin-top: 14px;
+  border: 1px solid rgba(219, 234, 254, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #dbeafe;
+  cursor: pointer;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ai-clear-search:hover {
+  background: rgba(59, 130, 246, 0.22);
+  color: #ffffff;
+}
 .ai-loading {
   display: inline-flex;
   align-items: center;
@@ -294,3 +341,4 @@
     bottom: 24px;
   }
 }
+

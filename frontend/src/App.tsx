@@ -4,8 +4,10 @@ import { ImageModal } from "./components/ImageModal";
 import { UploadForm } from "./components/UploadForm";
 import { usePhotoImport } from "./hooks/usePhotoImport";
 import { usePhotoMap } from "./hooks/usePhotoMap";
+import { usePhotoSearch } from "./hooks/usePhotoSearch";
 import { API_BASE_URL } from "./config/api";
 import { fetchGisLayers } from "./services/gisLayerService";
+import { generatePhotoTags } from "./services/photoTagService";
 import type { PhotoPoint } from "./types";
 import type { GisLayerSummary } from "./types/gis";
 import "./App.css";
@@ -41,6 +43,16 @@ function App() {
   const [isPhotoListOpen, setIsPhotoListOpen] = useState(false);
   const [isSubmittingPhoto, setIsSubmittingPhoto] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // Search results stay in the parent so Mapbox can visually highlight them.
+  const {
+    matchingPhotos,
+    isSearching,
+    searchError,
+    indexingInProgress,
+    failedPhotosPendingRetry,
+    searchPhotos,
+    clearSearch,
+  } = usePhotoSearch();
 
   const {
     selectedPhotos,
@@ -58,6 +70,7 @@ function App() {
     isMapVisible,
     photos: submittedPhotos,
     focusPhotoId: selectedMapPhotoId,
+    highlightedPhotoIds: matchingPhotos.map((photo) => photo.id),
     gisLayers,
     visibleLayerIds,
     uploadedGeoJson,
@@ -203,6 +216,23 @@ function App() {
     }
   }
 
+
+  async function handleGenerateTags(photo: PhotoPoint) {
+    const updatedPhoto = await generatePhotoTags(photo.id);
+
+    setSubmittedPhotos((currentPhotos) =>
+      currentPhotos.map((currentPhoto) =>
+        currentPhoto.id === updatedPhoto.id
+          ? {
+              ...updatedPhoto,
+              url: normalizePhotoUrl(updatedPhoto.url),
+              lat: Number(updatedPhoto.lat),
+              lng: Number(updatedPhoto.lng),
+            }
+          : currentPhoto,
+      ),
+    );
+  }
   function handleLayerToggle(layerId: string) {
     setVisibleLayerIds((currentLayerIds) =>
       currentLayerIds.includes(layerId)
@@ -327,6 +357,11 @@ function App() {
         mapContainerRef={mapContainerRef}
         photos={submittedPhotos}
         selectedPhotoId={selectedMapPhotoId}
+        matchingPhotos={matchingPhotos}
+        isSearchingPhotos={isSearching}
+        photoSearchError={searchError}
+        indexingInProgress={indexingInProgress}
+        failedPhotosPendingRetry={failedPhotosPendingRetry}
         gisLayers={gisLayers}
         visibleLayerIds={visibleLayerIds}
         isLayerPanelOpen={isLayerPanelOpen}
@@ -335,6 +370,7 @@ function App() {
         onListPhotoClick={handlePhotoPreview}
         onEditPhoto={handleEditPhoto}
         onDeletePhoto={handleDeletePhoto}
+        onGenerateTags={handleGenerateTags}
         onLayerToggle={handleLayerToggle}
         onToggleLayerPanel={() => setIsLayerPanelOpen((isOpen) => !isOpen)}
         onCloseLayerPanel={() => setIsLayerPanelOpen(false)}
@@ -342,6 +378,8 @@ function App() {
         onClosePhotoList={() => setIsPhotoListOpen(false)}
         onOpenUploadForm={handleOpenUploadForm}
         onGeoJsonUploaded={setUploadedGeoJson}
+        onSearchPhotos={searchPhotos}
+        onClearPhotoSearch={clearSearch}
       />
       {modalPhoto && (
       <ImageModal
@@ -362,3 +400,4 @@ function normalizePhotoUrl(url: string) {
     .replace("http://localhost:5000", API_BASE_URL)
     .replace("http://geo-snap.onrender.com", "https://geo-snap.onrender.com");
 }
+

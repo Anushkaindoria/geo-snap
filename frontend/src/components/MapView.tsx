@@ -3,7 +3,6 @@ import { Menu, SendHorizontal, Sparkles, Upload } from "lucide-react";
 import { PhotoListOverlay } from "./PhotoListOverlay";
 import { ProjectBanner } from "./ProjectBanner";
 import { ShapefileLayerPanel } from "./ShapefileLayerPanel";
-import { API_BASE_URL } from "../config/api";
 import type { PhotoPoint } from "../types";
 import type { GisLayerSummary } from "../types/gis";
 import "./ImageModal.css";
@@ -13,6 +12,11 @@ type MapViewProps = {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
   photos: PhotoPoint[];
   selectedPhotoId: string | null;
+  matchingPhotos: PhotoPoint[];
+  isSearchingPhotos: boolean;
+  photoSearchError: string;
+  indexingInProgress: boolean;
+  failedPhotosPendingRetry: number;
   gisLayers: GisLayerSummary[];
   visibleLayerIds: string[];
   isLayerPanelOpen: boolean;
@@ -21,6 +25,7 @@ type MapViewProps = {
   onListPhotoClick: (photo: PhotoPoint) => void;
   onEditPhoto: (photo: PhotoPoint) => void;
   onDeletePhoto: (photo: PhotoPoint) => void;
+  onGenerateTags: (photo: PhotoPoint) => Promise<void>;
   onLayerToggle: (layerId: string) => void;
   onToggleLayerPanel: () => void;
   onCloseLayerPanel: () => void;
@@ -28,6 +33,8 @@ type MapViewProps = {
   onClosePhotoList: () => void;
   onOpenUploadForm: () => void;
   onGeoJsonUploaded: (geojson: any) => void;
+  onSearchPhotos: (query: string) => Promise<PhotoPoint[]>;
+  onClearPhotoSearch: () => void;
 };
 
 // The map screen is shown first and stays full-screen behind the floating photo list.
@@ -35,6 +42,11 @@ export function MapView({
   mapContainerRef,
   photos,
   selectedPhotoId,
+  matchingPhotos,
+  isSearchingPhotos,
+  photoSearchError,
+  indexingInProgress,
+  failedPhotosPendingRetry,
   gisLayers,
   visibleLayerIds,
   isLayerPanelOpen,
@@ -43,6 +55,7 @@ export function MapView({
   onListPhotoClick,
   onEditPhoto,
   onDeletePhoto,
+  onGenerateTags,
   onLayerToggle,
   onToggleLayerPanel,
   onCloseLayerPanel,
@@ -50,54 +63,22 @@ export function MapView({
   onClosePhotoList,
   onOpenUploadForm,
   onGeoJsonUploaded,
+  onSearchPhotos,
+  onClearPhotoSearch,
 }: MapViewProps) {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [showAI, setShowAI] = useState(false);
-  const selectedPhoto = selectedPhotoId
-    ? photos.find((photo) => photo.id === selectedPhotoId)
-    : null;
 
   async function askAI() {
-    if (!question.trim()) {
+    const tagQuery = getTagSearchQuery(question);
+
+    if (!tagQuery) {
       return;
     }
 
-    if (!selectedPhoto) {
-      setAnswer("Select a photo marker first, then ask AI about that image.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setAnswer("");
-
-      const response = await fetch(`${API_BASE_URL}/api/vision/ask`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          imageUrl: selectedPhoto.url,
-          question,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAnswer(getFriendlyAiErrorMessage(data));
-        return;
-      }
-
-      setAnswer(data.answer || "No answer received");
-    } catch (error) {
-      console.error("AI ERROR:", error);
-      setAnswer("Failed to get AI response");
-    } finally {
-      setLoading(false);
-    }
+    setSubmittedQuery(tagQuery);
+    await onSearchPhotos(tagQuery);
   }
 
   return (
@@ -131,6 +112,7 @@ export function MapView({
           onPhotoClick={onListPhotoClick}
           onEditPhoto={onEditPhoto}
           onDeletePhoto={onDeletePhoto}
+          onGenerateTags={onGenerateTags}
           onShowAllPhotos={onShowAllPhotos}
           onClosePhotoList={onClosePhotoList}
           onUploadClick={onOpenUploadForm}
@@ -166,7 +148,7 @@ export function MapView({
           <div className="ai-input-wrapper">
             <input
               type="text"
-              placeholder="Ask a question..."
+              placeholder="Find photos by tag..."
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               onKeyDown={(event) => {
@@ -180,24 +162,67 @@ export function MapView({
               type="button"
               className="ai-send-button"
               onClick={askAI}
-              disabled={loading}
-              aria-label="Send AI question"
+              disabled={isSearchingPhotos}
+              aria-label="Search uploaded photos"
             >
               <SendHorizontal size={18} />
             </button>
           </div>
 
-          {answer && (
+          {submittedQuery && !isSearchingPhotos && !photoSearchError && (
             <div className="ai-answer">
-              <strong>AI Answer:</strong>
-              <p>{answer}</p>
+              <strong>Photo search</strong>
+              <p>
+                {matchingPhotos.length} matching {matchingPhotos.length === 1 ? "photo" : "photos"} for "{submittedQuery}".
+              </p>
+              {matchingPhotos.length > 0 && (
+                <ul className="ai-search-results">
+                  {matchingPhotos.map((photo) => (
+                    <li key={photo.id}>{photo.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {!isSearchingPhotos && !photoSearchError &&
+            (indexingInProgress || failedPhotosPendingRetry > 0) && (
+              <div className="ai-answer ai-indexing-status">
+                {indexingInProgress && (
+                  <p className="ai-indexing-note">
+                    Some photos are still being indexed. Search results may improve automatically.
+                  </p>
+                )}
+                {failedPhotosPendingRetry > 0 && (
+                  <small className="ai-indexing-count">
+                    {failedPhotosPendingRetry} {failedPhotosPendingRetry === 1 ? "photo" : "photos"} pending indexing.
+                  </small>
+                )}
+              </div>
+            )}
+          {(submittedQuery || matchingPhotos.length > 0 || photoSearchError || indexingInProgress || failedPhotosPendingRetry > 0) && !isSearchingPhotos && (
+            <button
+              type="button"
+              className="ai-clear-search"
+              onClick={() => {
+                setQuestion("");
+                setSubmittedQuery("");
+                onClearPhotoSearch();
+              }}
+            >
+              Clear Search
+            </button>
+          )}
+          {isSearchingPhotos && (
+            <div className="ai-loading" role="status" aria-live="polite">
+              <span className="ai-loading__icon">...</span>
+              <span>Searching uploaded photos...</span>
             </div>
           )}
 
-          {loading && (
-            <div className="ai-loading" role="status" aria-live="polite">
-              <span className="ai-loading__icon">...</span>
-              <span>Analyzing image...</span>
+          {photoSearchError && !isSearchingPhotos && (
+            <div className="ai-answer" role="alert">
+              <strong>Search unavailable</strong>
+              <p>{photoSearchError}</p>
             </div>
           )}
         </div>
@@ -216,27 +241,39 @@ export function MapView({
   );
 }
 
-type AiErrorResponse = {
-  type?: string;
-  message?: string;
-  retryAfter?: number;
-};
+// Turns natural language requests into the tag phrase expected by /api/photos/search.
+function getTagSearchQuery(message: string) {
+  const meaningfulWords = message
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => !PHOTO_SEARCH_STOP_WORDS.has(word.replace(/[^a-z0-9-]/g, "")));
 
-function getFriendlyAiErrorMessage(errorData: AiErrorResponse) {
-  if (errorData.type === "quota_exceeded") {
-    if (typeof errorData.retryAfter === "number" && errorData.retryAfter > 0) {
-      const minutes = Math.max(1, Math.ceil(errorData.retryAfter / 60));
-      return `AI request limit reached.\nTry again after ${minutes} ${
-        minutes === 1 ? "minute" : "minutes"
-      }.`;
-    }
-
-    return "AI request limit reached.\nPlease try again later.";
-  }
-
-  if (errorData.type === "service_busy") {
-    return "AI service is currently busy.\nPlease try again in a few minutes.";
-  }
-
-  return errorData.message || "Failed to get AI response";
+  return meaningfulWords.join(" ").replace(/[^a-z0-9 -]/g, "").trim();
 }
+
+const PHOTO_SEARCH_STOP_WORDS = new Set([
+  "show",
+  "find",
+  "search",
+  "for",
+  "photo",
+  "photos",
+  "image",
+  "images",
+  "picture",
+  "pictures",
+  "containing",
+  "contain",
+  "with",
+  "of",
+  "the",
+  "a",
+  "an",
+  "all",
+]);
+
+
+
+
+

@@ -18,7 +18,11 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import shapefileRoutes from "./routes/shapefileRoutes.js";
 import visionRoutes from "./routes/visionRoutes.js";
-import { generateTagsFromImage } from "./services/imageTagging.js";
+import {
+  countPhotosPendingIndexing,
+  generateTagsForPhoto,
+  startPhotoTagging,
+} from "./services/photoTaggingJob.js";
 
 dotenv.config();
 
@@ -56,6 +60,10 @@ type PhotoMetadata = {
   lng?: number | string;
   capturedAt?: string;
   description?: string;
+};
+
+type PhotoSearchRequestBody = {
+  query?: string;
 };
 
 const app = express();
@@ -120,48 +128,118 @@ app.get("/api/photos",async (_req: Request, res: Response) => {
   });
 });
 
+// Search uploaded photos by generated image tags.
+app.post(
+  "/api/photos/search",
+  async (
+    req: Request<Record<string, never>, unknown, PhotoSearchRequestBody>,
+    res: Response,
+  ) => {
+    try {
+      const query = req.body.query?.trim();
+
+      if (!query) {
+        res.status(400).json({
+          message: "Search query is required",
+        });
+        return;
+      }
+
+      const failedPhotosPendingRetry = await countPhotosPendingIndexing();
+      const indexingInProgress = failedPhotosPendingRetry > 0;
+
+      const photos = await Photo.find({
+        tagStatus: "completed",
+        tags: {
+          $regex: escapeRegex(query),
+          $options: "i",
+        },
+      });
+
+      res.json({
+        photos,
+        matchedCount: photos.length,
+        indexingInProgress,
+        failedPhotosPendingRetry,
+      });
+    } catch (error) {
+      console.error("Photo tag search failed:", error);
+
+      res.status(500).json({
+        message: "Failed to search photos",
+      });
+    }
+  },
+);
+
 // Frontend submits valid GPS photos here. Each image has one matching metadata item.
 app.post(
   "/api/photos",
   upload.array("photos"),
   async (req: Request, res: Response) => {
-    
-    const files = (req.files || []) as Express.Multer.File[];
-    const metadata = parseMetadata(req.body.metadata);
+    try {
+      const files = (req.files || []) as Express.Multer.File[];
+      const metadata = parseMetadata(req.body.metadata);
 
-    
-    const savedPhotos = await Promise.all(
-     files.map(async(file, index) => {
-      const item = metadata[index] || {};
-     console.log("Before tag generation");
-      const tags = await generateTagsFromImage(
-  (file as any).path,
-);
-console.log("After tag generation");
-console.log("Generated tags:", tags);
-    
-      const photo = {
-        id: randomUUID(),
-        name: item.name || file.originalname,
-        url: (file as any).path,
-        lat: Number(item.lat),
-        lng: Number(item.lng),
-        capturedAt: item.capturedAt || undefined,
-        description: item.description || "",
-        tags,
-      };
-      const savedPhoto = await Photo.create(photo);
-      
-      return savedPhoto;
-      }),
-  );
+      // Persist uploads first. Gemini runs after this response has reached the user.
+      const savedPhotos = await Promise.all(
+        files.map(async (file, index) => {
+          const item = metadata[index] || {};
 
-    res.status(201).json({
-      photos: savedPhotos,
-    });
+          return Photo.create({
+            id: randomUUID(),
+            name: item.name || file.originalname,
+            url: (file as any).path,
+            lat: Number(item.lat),
+            lng: Number(item.lng),
+            capturedAt: item.capturedAt || undefined,
+            description: item.description || "",
+            tags: [],
+            tagStatus: "pending",
+          });
+        }),
+      );
+
+      res.status(201).json({
+        photos: savedPhotos,
+      });
+
+      // Deliberately do not await: an unavailable Gemini service must not delay uploads.
+      savedPhotos.forEach((photo) => {
+        startPhotoTagging(photo.id);
+      });
+    } catch (error) {
+      console.error("Photo upload failed:", error);
+      res.status(500).json({
+        message: "Photo could not be uploaded. Please try again.",
+      });
+    }
   },
 );
 
+// Manually regenerate AI tags for one existing uploaded photo.
+app.post("/api/photos/:photoId/generate-tags", async (req: Request<{ photoId: string }>, res: Response) => {
+  try {
+    const updatedPhoto = await generateTagsForPhoto(req.params.photoId);
+
+    if (!updatedPhoto) {
+      res.status(404).json({
+        message: "Photo not found",
+      });
+      return;
+    }
+
+    res.json({
+      photo: updatedPhoto,
+    });
+  } catch (error) {
+    console.error("Manual photo tag generation failed:", error);
+
+    res.status(503).json({
+      message: "AI service is busy. Please try again in a few minutes.",
+    });
+  }
+});
 // Update editable metadata while keeping the existing uploaded image file.
 app.put("/api/photos/:id", async (req: Request, res: Response) => {
   const updatedPhoto = await Photo.findOneAndUpdate(
@@ -234,3 +312,13 @@ function parseMetadata(metadata: unknown): PhotoMetadata[] {
     return [];
   }
 }
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+
+
+
+
+

@@ -100,6 +100,12 @@
   background: #ffffff;
 }
 
+/* Search matches remain visible but are visually distinct from other uploaded photos. */
+.photo-marker--search-match {
+  background: #f59e0b;
+  box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.35), 0 8px 18px rgba(120, 53, 15, 0.42);
+}
+
 @media (max-width: 680px) {
   .map-layer-toggle {
     top: calc(var(--project-banner-height) + 10px);

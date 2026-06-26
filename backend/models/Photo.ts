@@ -41,6 +41,13 @@ const photoSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+
+    // Tagging happens after the upload response so users never wait for Gemini.
+    tagStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed"],
+      default: "pending",
+    },
   },
   {
     timestamps: true,
@@ -50,3 +57,4 @@ const photoSchema = new mongoose.Schema(
 const Photo = mongoose.model("Photo", photoSchema);
 
 export default Photo;
+

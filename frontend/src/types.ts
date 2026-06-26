@@ -9,6 +9,8 @@ export type PhotoPoint = {
   lng: number;
   capturedAt?: string;
   description?: string;
+  tags?: string[];
+  tagStatus?: "pending" | "completed" | "failed";
 };
 
 // Invalid photos are kept only to show the current upload error message.
@@ -17,3 +19,5 @@ export type InvalidPhoto = {
   name: string;
   url: string;
 };
+
+

@@ -48,13 +48,7 @@ Return tags only.
       .filter(Boolean) || [];
 
   } catch (error) {
-  console.error(
-    "TAGGING ERROR FULL:",
-    JSON.stringify(error, null, 2)
-  );
-
-  console.error("TAGGING ERROR:", error);
-
-  return [];
-}
+    console.error("TAGGING ERROR:", error);
+    throw error;
+  }
 }

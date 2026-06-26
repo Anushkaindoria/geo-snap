@@ -12,6 +12,7 @@ type UsePhotoMapOptions = {
   isMapVisible: boolean;
   photos: PhotoPoint[];
   focusPhotoId: string | null;
+  highlightedPhotoIds: string[];
   gisLayers: GisLayerSummary[];
   visibleLayerIds: string[];
   uploadedGeoJson: any | null;
@@ -23,6 +24,7 @@ export function usePhotoMap({
   isMapVisible,
   photos,
   focusPhotoId,
+  highlightedPhotoIds,
   gisLayers,
   visibleLayerIds,
   onMarkerClick,
@@ -126,9 +128,13 @@ export function usePhotoMap({
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    const highlightedPhotoIdSet = new Set(highlightedPhotoIds);
+
     photos.forEach((photo) => {
       const markerElement = document.createElement("button");
-      markerElement.className = "photo-marker";
+      markerElement.className = highlightedPhotoIdSet.has(photo.id)
+        ? "photo-marker photo-marker--search-match"
+        : "photo-marker";
       markerElement.type = "button";
       markerElement.setAttribute("aria-label", `Open ${photo.name}`);
       markerElement.addEventListener("click", () => onMarkerClickRef.current(photo));
@@ -161,7 +167,7 @@ export function usePhotoMap({
         essential: true,
       });
     }
-  }, [isMapVisible, photos, focusPhotoId]);
+  }, [isMapVisible, photos, focusPhotoId, highlightedPhotoIds]);
 
   function flyToPhoto(photo: PhotoPoint) {
     if (!mapRef.current) return;
