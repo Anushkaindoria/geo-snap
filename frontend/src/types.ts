@@ -21,3 +21,16 @@ export type InvalidPhoto = {
 };
 
 
+
+// A saved document uploaded to Cloudinary and tracked separately from photos.
+export type DocumentRecord = {
+  id: string;
+  name: string;
+  url: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};

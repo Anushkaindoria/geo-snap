@@ -1,23 +1,36 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { MapView } from "./components/MapView";
 import { ImageModal } from "./components/ImageModal";
 import { UploadForm } from "./components/UploadForm";
+import { DocumentUploadForm } from "./components/DocumentsPage";
+import type { UploadSection } from "./components/AppSectionTabs";
 import { usePhotoImport } from "./hooks/usePhotoImport";
 import { usePhotoMap } from "./hooks/usePhotoMap";
 import { usePhotoSearch } from "./hooks/usePhotoSearch";
 import { API_BASE_URL } from "./config/api";
 import { fetchGisLayers } from "./services/gisLayerService";
 import { generatePhotoTags } from "./services/photoTagService";
-import type { PhotoPoint } from "./types";
-import type { GisLayerSummary } from "./types/gis";
+import { deleteDocument, fetchDocuments, uploadDocumentFile } from "./services/documentService";
+import type { DocumentRecord, PhotoPoint } from "./types";
+import type { GeoJsonFeatureCollection, GisLayerSummary } from "./types/gis";
 import "./App.css";
 
 const VIEW_STORAGE_KEY = "photo-map-current-view";
 const DESCRIPTION_STORAGE_KEY = "photo-map-upload-description";
 const VISIBLE_LAYERS_STORAGE_KEY = "photo-map-visible-layer-ids";
+const UPLOAD_SECTION_STORAGE_KEY = "photo-map-upload-section";
 
 function App() {
   // The app starts on the map screen; the upload form opens from the map panel.
+  const [activeSection, setActiveSection] = useState<UploadSection>(() =>
+    sessionStorage.getItem(UPLOAD_SECTION_STORAGE_KEY) === "documents"
+      ? "documents"
+      : "photos",
+  );
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [documentError, setDocumentError] = useState("");
+  const [isDocumentListOpen, setIsDocumentListOpen] = useState(false);
   const [isMapVisible, setIsMapVisible] = useState(() => {
     return sessionStorage.getItem(VIEW_STORAGE_KEY) !== "form";
   });
@@ -37,7 +50,7 @@ function App() {
       return [];
     }
   });
-  const [uploadedGeoJson, setUploadedGeoJson] = useState<any | null>(null);
+  const [uploadedGeoJson, setUploadedGeoJson] = useState<GeoJsonFeatureCollection | null>(null);
   const [gisLayers, setGisLayers] = useState<GisLayerSummary[]>([]);
   const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
   const [isPhotoListOpen, setIsPhotoListOpen] = useState(false);
@@ -174,6 +187,7 @@ function App() {
     setSubmitError("");
     clearFormDraft();
     setEditingPhotoId(null);
+    setActiveSection("photos");
     setIsMapVisible(false);
   }
 
@@ -233,6 +247,51 @@ function App() {
       ),
     );
   }
+  async function handleDocumentUpload(file: File) {
+    const savedDocument = await uploadDocumentFile(file, "");
+    setDocuments((currentDocuments) => [savedDocument, ...currentDocuments]);
+    setDocumentError("");
+    return savedDocument;
+  }
+
+  async function handleDeleteDocument(document: DocumentRecord) {
+    if (!window.confirm(`Do you want to delete "${document.name}"?`)) return;
+
+    try {
+      await deleteDocument(document.id);
+      setDocuments((currentDocuments) =>
+        currentDocuments.filter((currentDocument) => currentDocument.id !== document.id),
+      );
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : "Document could not be deleted.");
+    }
+  }
+
+  function closeMapPanels() {
+    setIsPhotoListOpen(false);
+    setIsDocumentListOpen(false);
+    setIsLayerPanelOpen(false);
+  }
+
+  function handleOpenPhotoList() {
+    setSelectedMapPhotoId(null);
+    setIsDocumentListOpen(false);
+    setIsLayerPanelOpen(false);
+    setIsPhotoListOpen(true);
+  }
+
+  function handleOpenDocumentList() {
+    setIsPhotoListOpen(false);
+    setIsLayerPanelOpen(false);
+    setIsDocumentListOpen(true);
+  }
+
+  function handleOpenLayerPanel() {
+    setIsPhotoListOpen(false);
+    setIsDocumentListOpen(false);
+    setIsLayerPanelOpen(true);
+  }
+
   function handleLayerToggle(layerId: string) {
     setVisibleLayerIds((currentLayerIds) =>
       currentLayerIds.includes(layerId)
@@ -243,6 +302,8 @@ function App() {
 
   function handleMarkerPhotoSelect(photo: PhotoPoint) {
     setSelectedMapPhotoId(photo.id);
+    setIsDocumentListOpen(false);
+    setIsLayerPanelOpen(false);
     setIsPhotoListOpen(true);
   }
 
@@ -280,6 +341,26 @@ function App() {
     }
 
     loadPhotos();
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadDocuments() {
+      try {
+        const savedDocuments = await fetchDocuments();
+        if (isActive) setDocuments(savedDocuments);
+      } catch (error) {
+        if (isActive) {
+          setDocumentError(error instanceof Error ? error.message : "Documents could not be loaded.");
+        }
+      } finally {
+        if (isActive) setIsLoadingDocuments(false);
+      }
+    }
+
+    loadDocuments();
+    return () => { isActive = false; };
   }, []);
 
   useEffect(() => {
@@ -329,7 +410,20 @@ function App() {
     );
   }, [visibleLayerIds]);
 
+
   if (!isMapVisible) {
+    if (activeSection === "documents") {
+      return (
+        <DocumentUploadForm
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          onUpload={handleDocumentUpload}
+          onBackToMap={handleBackToMap}
+          onClearForm={() => {}}
+        />
+      );
+    }
+
     return (
       <UploadForm
         selectedPhotos={selectedPhotos}
@@ -343,10 +437,10 @@ function App() {
         onClearForm={handleClearForm}
         onBackToMap={handleBackToMap}
         submitError={submitError}
-        submitLabel={
-          isSubmittingPhoto ? "Submitting..." : editingPhotoId ? "Update" : "Submit"
-        }
+        submitLabel={isSubmittingPhoto ? "Submitting..." : editingPhotoId ? "Update" : "Submit"}
         isSubmitting={isSubmittingPhoto}
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
       />
     );
   }
@@ -366,27 +460,31 @@ function App() {
         visibleLayerIds={visibleLayerIds}
         isLayerPanelOpen={isLayerPanelOpen}
         isPhotoListOpen={isPhotoListOpen}
+        isDocumentListOpen={isDocumentListOpen}
+        documents={documents}
+        isLoadingDocuments={isLoadingDocuments}
+        documentError={documentError}
         isImageModalOpen={Boolean(modalPhoto)}
         onListPhotoClick={handlePhotoPreview}
         onEditPhoto={handleEditPhoto}
         onDeletePhoto={handleDeletePhoto}
         onGenerateTags={handleGenerateTags}
         onLayerToggle={handleLayerToggle}
-        onToggleLayerPanel={() => setIsLayerPanelOpen((isOpen) => !isOpen)}
+        onOpenLayerPanel={handleOpenLayerPanel}
         onCloseLayerPanel={() => setIsLayerPanelOpen(false)}
+        onOpenPhotoList={handleOpenPhotoList}
         onShowAllPhotos={() => setSelectedMapPhotoId(null)}
         onClosePhotoList={() => setIsPhotoListOpen(false)}
         onOpenUploadForm={handleOpenUploadForm}
+        onOpenDocumentList={handleOpenDocumentList}
+        onCloseDocumentList={() => setIsDocumentListOpen(false)}
+        onCloseActivePanel={closeMapPanels}
+        onDeleteDocument={handleDeleteDocument}
         onGeoJsonUploaded={setUploadedGeoJson}
         onSearchPhotos={searchPhotos}
         onClearPhotoSearch={clearSearch}
       />
-      {modalPhoto && (
-      <ImageModal
-        photo={modalPhoto}
-        onClose={() => setModalPhoto(null)}
-      />
-    )}
+      {modalPhoto && <ImageModal photo={modalPhoto} onClose={() => setModalPhoto(null)} />}
     </>
   );
 }
@@ -400,4 +498,10 @@ function normalizePhotoUrl(url: string) {
     .replace("http://localhost:5000", API_BASE_URL)
     .replace("http://geo-snap.onrender.com", "https://geo-snap.onrender.com");
 }
+
+
+
+
+
+
 

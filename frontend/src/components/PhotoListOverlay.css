@@ -1,12 +1,12 @@
-/* Floating uploaded-photo list.
+﻿/* Floating uploaded-photo list.
    This panel sits on top of the map and lets users jump to each marker. */
 
 /* Compact first-use prompt.
    This card is shown only when the map does not contain any submitted photos. */
 .empty-upload-card {
   position: absolute;
-  top: calc(var(--project-banner-height) + 18px);
-  left: 18px;
+  top: calc(var(--project-banner-height) + 78px);
+  left: 16px;
   z-index: 2;
   width: min(300px, calc(100vw - 36px));
   display: grid;
@@ -66,11 +66,11 @@
 
 .map-photo-list {
   position: absolute;
-  top: calc(var(--project-banner-height) + 18px);
-  left: 18px;
+  top: calc(var(--project-banner-height) + 78px);
+  left: 16px;
   z-index: 2;
   width: min(340px, calc(100vw - 36px));
-  max-height: calc(100vh - var(--project-banner-height) - 36px);
+  max-height: calc(100vh - var(--project-banner-height) - 96px);
   display: grid;
   grid-template-rows: auto 1fr auto;
   border: 1px solid rgba(203, 213, 225, 0.9);
@@ -314,12 +314,12 @@
   }
 
   .map-photo-list {
-    top: auto;
-    right: 12px;
-    bottom: calc(70px + env(safe-area-inset-bottom));
+    top: calc(var(--project-banner-height) + 66px);
+    right: auto;
+    bottom: auto;
     left: 12px;
-    width: auto;
-    max-height: min(46vh, 420px);
+    width: min(340px, calc(100vw - 24px));
+    max-height: calc(100dvh - var(--project-banner-height) - 82px);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(14px);
@@ -396,3 +396,4 @@
 .map-list-item .map-list-tag-status {
   display: inline-flex;
 }
+

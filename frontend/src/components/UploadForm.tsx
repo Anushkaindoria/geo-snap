@@ -1,6 +1,7 @@
 import { Camera, FolderOpen, Image } from "lucide-react";
 import type { InvalidPhoto, PhotoPoint } from "../types";
 import { ProjectBanner } from "./ProjectBanner";
+import { AppSectionTabs, type UploadSection } from "./AppSectionTabs";
 import "./UploadForm.css";
 
 type UploadFormProps = {
@@ -21,6 +22,8 @@ type UploadFormProps = {
   submitError?: string;
   submitLabel?: string;
   isSubmitting?: boolean;
+  activeSection: UploadSection;
+  onSectionChange: (section: UploadSection) => void;
 };
 
 // This screen collects photos first, then shows extracted GPS values before submit.
@@ -38,6 +41,8 @@ export function UploadForm({
   submitError,
   submitLabel = "Submit",
   isSubmitting = false,
+  activeSection,
+  onSectionChange,
 }: UploadFormProps) {
   const hasFormData = selectedPhotos.length > 0 || invalidPhotos.length > 0;
   const validCoordinateCount = selectedPhotos.filter((photo) => {
@@ -48,6 +53,7 @@ export function UploadForm({
   return (
     <main className="form-screen">
       <ProjectBanner />
+      <AppSectionTabs activeSection={activeSection} onSectionChange={onSectionChange} />
 
       <form className="upload-form" onSubmit={onSubmit}>
         <div className="form-heading">
@@ -211,3 +217,6 @@ export function UploadForm({
     </main>
   );
 }
+
+
+

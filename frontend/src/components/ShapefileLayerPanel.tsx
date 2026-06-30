@@ -1,5 +1,5 @@
-import { X } from "lucide-react";
-import type { GisLayerSummary } from "../types/gis";
+﻿import { X } from "lucide-react";
+import type { GeoJsonFeatureCollection, GisLayerSummary } from "../types/gis";
 import "./ShapefileLayerPanel.css";
 import { useState } from "react";
 import { API_BASE_URL } from "../config/api";
@@ -9,7 +9,7 @@ type ShapefileLayerPanelProps = {
   visibleLayerIds: string[];
   onLayerToggle: (layerId: string) => void;
   onClose: () => void;
-  onGeoJsonUploaded: (geojson: any) => void;
+  onGeoJsonUploaded: (geojson: GeoJsonFeatureCollection) => void;
 };
 
 // Right-side map control for turning dynamic PostGIS GeoJSON layers on and off.
@@ -71,7 +71,12 @@ export function ShapefileLayerPanel({
         },
       );
 
-      const data = await response.json();
+      const data: { geojson?: GeoJsonFeatureCollection } = await response.json();
+
+      if (!data.geojson) {
+        alert("Upload failed");
+        return;
+      }
 
       onGeoJsonUploaded(data.geojson);
       alert("Upload complete");
@@ -102,3 +107,4 @@ export function ShapefileLayerPanel({
     </aside>
   );
 }
+

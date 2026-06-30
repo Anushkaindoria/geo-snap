@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import type { PhotoPoint } from "../types";
 import {
@@ -6,7 +6,7 @@ import {
   setDynamicGeoJsonLayerVisibility,
 } from "../mapLayers/dynamicGeoJsonLayer";
 import { fetchGisLayerGeoJson } from "../services/gisLayerService";
-import type { GisLayerSummary } from "../types/gis";
+import type { GeoJsonFeatureCollection, GisLayerSummary } from "../types/gis";
 
 type UsePhotoMapOptions = {
   isMapVisible: boolean;
@@ -15,7 +15,7 @@ type UsePhotoMapOptions = {
   highlightedPhotoIds: string[];
   gisLayers: GisLayerSummary[];
   visibleLayerIds: string[];
-  uploadedGeoJson: any | null;
+  uploadedGeoJson: GeoJsonFeatureCollection | null;
   onMarkerClick: (photo: PhotoPoint) => void;
 };
 
@@ -68,11 +68,12 @@ export function usePhotoMap({
       map.resize();
     }, 100);
 
-    
+    const loadedGisLayerIds = loadedGisLayerIdsRef.current;
+
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
-      loadedGisLayerIdsRef.current.clear();
+      loadedGisLayerIds.clear();
       map.remove();
       mapRef.current = null;
     };
@@ -198,11 +199,9 @@ export function usePhotoMap({
 
   const bounds = new mapboxgl.LngLatBounds();
 
-  uploadedGeoJson.features.forEach((feature: any) => {
-    const coords = feature.geometry.coordinates;
-
+  uploadedGeoJson.features.forEach((feature) => {
     if (feature.geometry.type === "Point") {
-      bounds.extend(coords);
+      bounds.extend(feature.geometry.coordinates as [number, number]);
     }
   });
 
@@ -218,3 +217,4 @@ export function usePhotoMap({
     flyToPhoto,
   };
 }
+

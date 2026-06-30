@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Menu, SendHorizontal, Sparkles, Upload } from "lucide-react";
+﻿import { useState } from "react";
+import { Camera, FileText, Layers, Menu, SendHorizontal, Sparkles, Upload } from "lucide-react";
 import { PhotoListOverlay } from "./PhotoListOverlay";
+import { DocumentListOverlay } from "./DocumentListOverlay";
 import { ProjectBanner } from "./ProjectBanner";
 import { ShapefileLayerPanel } from "./ShapefileLayerPanel";
-import type { PhotoPoint } from "../types";
-import type { GisLayerSummary } from "../types/gis";
+import type { DocumentRecord, PhotoPoint } from "../types";
+import type { GeoJsonFeatureCollection, GisLayerSummary } from "../types/gis";
 import "./ImageModal.css";
 import "./MapView.css";
 
@@ -21,23 +22,32 @@ type MapViewProps = {
   visibleLayerIds: string[];
   isLayerPanelOpen: boolean;
   isPhotoListOpen: boolean;
+  isDocumentListOpen: boolean;
+  documents: DocumentRecord[];
+  isLoadingDocuments: boolean;
+  documentError: string;
   isImageModalOpen: boolean;
   onListPhotoClick: (photo: PhotoPoint) => void;
   onEditPhoto: (photo: PhotoPoint) => void;
   onDeletePhoto: (photo: PhotoPoint) => void;
   onGenerateTags: (photo: PhotoPoint) => Promise<void>;
   onLayerToggle: (layerId: string) => void;
-  onToggleLayerPanel: () => void;
+  onOpenLayerPanel: () => void;
   onCloseLayerPanel: () => void;
+  onOpenPhotoList: () => void;
   onShowAllPhotos: () => void;
   onClosePhotoList: () => void;
   onOpenUploadForm: () => void;
-  onGeoJsonUploaded: (geojson: any) => void;
+  onOpenDocumentList: () => void;
+  onCloseDocumentList: () => void;
+  onCloseActivePanel: () => void;
+  onDeleteDocument: (document: DocumentRecord) => Promise<void>;
+  onGeoJsonUploaded: (geojson: GeoJsonFeatureCollection) => void;
   onSearchPhotos: (query: string) => Promise<PhotoPoint[]>;
   onClearPhotoSearch: () => void;
 };
 
-// The map screen is shown first and stays full-screen behind the floating photo list.
+// The map screen is shown first and stays full-screen behind the floating panels.
 export function MapView({
   mapContainerRef,
   photos,
@@ -51,17 +61,26 @@ export function MapView({
   visibleLayerIds,
   isLayerPanelOpen,
   isPhotoListOpen,
+  isDocumentListOpen,
+  documents,
+  isLoadingDocuments,
+  documentError,
   isImageModalOpen,
   onListPhotoClick,
   onEditPhoto,
   onDeletePhoto,
   onGenerateTags,
   onLayerToggle,
-  onToggleLayerPanel,
+  onOpenLayerPanel,
   onCloseLayerPanel,
+  onOpenPhotoList,
   onShowAllPhotos,
   onClosePhotoList,
   onOpenUploadForm,
+  onOpenDocumentList,
+  onCloseDocumentList,
+  onCloseActivePanel,
+  onDeleteDocument,
   onGeoJsonUploaded,
   onSearchPhotos,
   onClearPhotoSearch,
@@ -69,6 +88,8 @@ export function MapView({
   const [question, setQuestion] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [showAI, setShowAI] = useState(false);
+  const [isMainMenuOpen, setIsMainMenuOpen] = useState(false);
+  const hasOpenNavigationSurface = isMainMenuOpen || isPhotoListOpen || isDocumentListOpen || isLayerPanelOpen;
 
   async function askAI() {
     const tagQuery = getTagSearchQuery(question);
@@ -81,20 +102,70 @@ export function MapView({
     await onSearchPhotos(tagQuery);
   }
 
+  function openNavigationPanel(openPanel: () => void) {
+    setIsMainMenuOpen(false);
+    openPanel();
+  }
+
+  function closeNavigationSurfaces() {
+    setIsMainMenuOpen(false);
+    onCloseActivePanel();
+  }
+
   return (
     <main className="map-screen">
       <div ref={mapContainerRef} className="map-container" />
       <ProjectBanner overlay />
 
-      <button
-        type="button"
-        className="map-layer-toggle"
-        onClick={onToggleLayerPanel}
-        aria-label="Open shapefile layers"
-      >
-        <Menu size={22} />
-        <span>{visibleLayerIds.length}</span>
-      </button>
+      {hasOpenNavigationSurface && (
+        <button
+          type="button"
+          className="map-click-away"
+          onClick={closeNavigationSurfaces}
+          aria-label="Close open navigation panel"
+        />
+      )}
+
+      <div className="map-main-nav">
+        <button
+          type="button"
+          className="map-layer-toggle"
+          onClick={() => setIsMainMenuOpen((isOpen) => !isOpen)}
+          aria-label="Open application menu"
+          aria-expanded={isMainMenuOpen}
+        >
+          <Menu size={22} />
+        </button>
+
+        {isMainMenuOpen && (
+          <div className="map-main-menu" role="menu" aria-label="Application navigation">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => openNavigationPanel(onOpenPhotoList)}
+            >
+              <Camera size={17} />
+              <span>Uploaded Photos</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => openNavigationPanel(onOpenDocumentList)}
+            >
+              <FileText size={17} />
+              <span>Documents</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => openNavigationPanel(onOpenLayerPanel)}
+            >
+              <Layers size={17} />
+              <span>Layers</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       <button
         type="button"
@@ -102,8 +173,18 @@ export function MapView({
         onClick={onOpenUploadForm}
       >
         <Upload size={18} />
-        <span>Upload photo</span>
+        <span>Upload Files</span>
       </button>
+
+      {isDocumentListOpen && (
+        <DocumentListOverlay
+          documents={documents}
+          isLoading={isLoadingDocuments}
+          error={documentError}
+          onDelete={onDeleteDocument}
+          onClose={onCloseDocumentList}
+        />
+      )}
 
       {isPhotoListOpen && photos.length > 0 && (
         <PhotoListOverlay
@@ -230,12 +311,12 @@ export function MapView({
 
       {isLayerPanelOpen && (
         <ShapefileLayerPanel
-        layers={gisLayers}
-        visibleLayerIds={visibleLayerIds}
-        onLayerToggle={onLayerToggle}
-        onClose={onCloseLayerPanel}
-        onGeoJsonUploaded={onGeoJsonUploaded}
-      />
+          layers={gisLayers}
+          visibleLayerIds={visibleLayerIds}
+          onLayerToggle={onLayerToggle}
+          onClose={onCloseLayerPanel}
+          onGeoJsonUploaded={onGeoJsonUploaded}
+        />
       )}
     </main>
   );
@@ -272,8 +353,4 @@ const PHOTO_SEARCH_STOP_WORDS = new Set([
   "an",
   "all",
 ]);
-
-
-
-
 

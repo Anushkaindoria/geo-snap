@@ -1,0 +1,64 @@
+/* Document intake reuses the photo upload form's structural classes. */
+.document-form-screen .app-section-tabs + .document-upload-form {
+  min-height: auto;
+  padding-top: 28px;
+}
+
+.document-upload-form {
+  padding-bottom: 48px;
+}
+
+.document-dropzone {
+  cursor: pointer;
+}
+
+.document-dropzone input {
+  display: none;
+}
+
+.document-choose-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: 4px;
+  border-radius: 8px;
+  background: #172554;
+  color: #ffffff;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.document-selected-file,
+.document-error {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dce5ef;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 14px;
+}
+
+.document-selected-file > svg { color: #1d4ed8; }
+.document-selected-file span { min-width: 0; display: grid; gap: 3px; }
+.document-selected-file strong { overflow-wrap: anywhere; color: #0f172a; }
+.document-selected-file small { color: #64748b; }
+
+.document-error {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 800;
+}
+
+.document-form-actions {
+  grid-template-columns: 1fr auto;
+}
+
+@media (max-width: 680px) {
+  .document-form-screen .app-section-tabs + .document-upload-form { padding-top: 20px; }
+  .document-form-actions { grid-template-columns: 1fr; }
+}

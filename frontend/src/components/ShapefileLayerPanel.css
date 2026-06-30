@@ -1,9 +1,9 @@
-/* Floating shapefile visibility control.
-   It sits on the right side of the map, matching the requested red-box area. */
+﻿/* Floating shapefile visibility control.
+   It sits below the main hamburger menu on the left side of the map. */
 .shapefile-panel {
   position: absolute;
-  top: calc(var(--project-banner-height) + 72px);
-  right: 16px;
+  top: calc(var(--project-banner-height) + 78px);
+  left: 16px;
   bottom: calc(18px + env(safe-area-inset-bottom));
   z-index: 6;
   width: min(310px, calc(100vw - 36px));
@@ -118,10 +118,10 @@
 
 @media (max-width: 860px) {
   .shapefile-panel {
-    top: calc(var(--project-banner-height) + 62px);
-    right: 12px;
+    top: calc(var(--project-banner-height) + 66px);
+    right: auto;
     bottom: calc(12px + env(safe-area-inset-bottom));
-    left: auto;
+    left: 12px;
     width: min(310px, calc(100vw - 24px));
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.97);
@@ -146,7 +146,7 @@
 
 @media (max-width: 520px) {
   .shapefile-panel {
-    right: 10px;
+    left: 10px;
     width: min(280px, calc(100vw - 20px));
   }
 

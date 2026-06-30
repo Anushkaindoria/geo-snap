@@ -17,6 +17,7 @@ import layerRoutes from "./routes/layerRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import shapefileRoutes from "./routes/shapefileRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
 import visionRoutes from "./routes/visionRoutes.js";
 import {
   countPhotosPendingIndexing,
@@ -84,6 +85,7 @@ app.use(express.json());
 app.use("/api/layers", layerRoutes);//using shapefiles layer 
 app.use("/api/shapefiles", shapefileRoutes);
 app.use("/api/vision", visionRoutes);
+app.use("/api/documents", documentRoutes);
 
 const storage = new CloudinaryStorage({
   cloudinary,
@@ -316,6 +318,7 @@ function parseMetadata(metadata: unknown): PhotoMetadata[] {
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
 
 
 

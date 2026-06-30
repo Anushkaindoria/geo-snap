@@ -1,0 +1,50 @@
+/* Upload-type switcher. It lives inside the upload screen, never over the map. */
+.app-section-tabs {
+  width: fit-content;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, auto));
+  justify-content: start;
+  gap: 8px;
+
+  margin: 22px 0 0;
+  margin-left: clamp(18px, 6vw, 96px);
+
+  padding: 5px;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.app-section-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border-radius: 6px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.app-section-tabs button:hover {
+  background: #ffffff;
+  color: #1d4ed8;
+}
+
+.app-section-tabs button.active {
+  background: #172554;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(23, 37, 84, 0.18);
+}
+
+@media (max-width: 560px) {
+  .app-section-tabs {
+    width: calc(100% - 24px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 14px;
+  }
+}
